@@ -1,0 +1,69 @@
+{
+  "products": [
+    {
+      "id": "PRD01",
+      "name": "Roti Manis",
+      "price": 5000,
+      "hpp": 3000,
+      "margin": 2000,
+      "oven": 2,
+      "mixer": 1,
+      "sdm": 1,
+      "dmax": 250,
+      "bom": { "RM001": 0.05, "RM002": 0.01, "RM003": 0.01, "RM004": 0.015, "RM005": 0.5 }
+    },
+    {
+      "id": "PRD02",
+      "name": "Roti Tawar",
+      "price": 15000,
+      "hpp": 9000,
+      "margin": 6000,
+      "oven": 5,
+      "mixer": 2,
+      "sdm": 3,
+      "dmax": 100,
+      "bom": { "RM001": 0.25, "RM002": 0.01, "RM003": 0.02, "RM004": 0.02, "RM005": 1 }
+    },
+    {
+      "id": "PRD03",
+      "name": "Roti Kering (Bagelan)",
+      "price": 12000,
+      "hpp": 7000,
+      "margin": 5000,
+      "oven": 3,
+      "mixer": 1.5,
+      "sdm": 2,
+      "dmax": 100,
+      "bom": { "RM001": 0.15, "RM002": 0.01, "RM003": 0.03, "RM004": 0.03, "RM005": 0.3 }
+    }
+  ],
+  "materials": [
+    { "id": "RM001", "name": "Tepung Terigu", "unit": "kg", "stock": 50 },
+    { "id": "RM002", "name": "Telur Ayam", "unit": "kg", "stock": 20 },
+    { "id": "RM003", "name": "Mentega / Butter", "unit": "kg", "stock": 10 },
+    { "id": "RM004", "name": "Gula Pasir", "unit": "kg", "stock": 15 },
+    { "id": "RM005", "name": "Ragi (Yeast)", "unit": "gr", "stock": 500 }
+  ],
+  "defaults": { "modal": 750000, "ovenJam": 8, "mixerJam": 4, "sdmJam": 16, "orderMin": 150 },
+  "labaKemarin": 452000,
+  "daily": [
+    { "label": "Sen", "title": "Senin, 12 Okt 2026", "laba": 285000, "pendapatan": 712000 },
+    { "label": "Sel", "title": "Selasa, 13 Okt 2026", "laba": 312000, "pendapatan": 795000 },
+    { "label": "Rab", "title": "Rabu, 14 Okt 2026", "laba": 268000, "pendapatan": 672000 },
+    { "label": "Kam", "title": "Kamis, 15 Okt 2026", "laba": 344000, "pendapatan": 878000 },
+    { "label": "Jum", "title": "Jumat, 16 Okt 2026", "laba": 378000, "pendapatan": 958000 },
+    { "label": "Sab", "title": "Sabtu, 17 Okt 2026", "laba": 452000, "pendapatan": 1141000 }
+  ],
+  "weekly": [
+    { "label": "P1", "title": "Minggu ke-1 • Okt 2026", "laba": 1980000, "pendapatan": 5120000 },
+    { "label": "P2", "title": "Minggu ke-2 • Okt 2026", "laba": 2240000, "pendapatan": 5780000 },
+    { "label": "P3", "title": "Minggu ke-3 • Okt 2026", "laba": 2050000, "pendapatan": 5310000 }
+  ],
+  "orders": [
+    { "id": "ORD-001", "act": "Roti Manis", "emoji": "🍞", "tint": "#FDE8E8", "sub": "Pesanan Khusus • Prioritas High", "deadline": "Besok, 09:00 WIB", "qty": 150, "status": "Diproses", "st": "process" },
+    { "id": "ORD-002", "act": "Roti Tawar", "emoji": "🥖", "tint": "#EAF1FE", "sub": "Produksi Rutin", "deadline": "Hari ini, 07:30 WIB", "qty": 40, "status": "Selesai", "st": "done" },
+    { "id": "ORD-003", "act": "Roti Kering (Bagelan)", "emoji": "🥨", "tint": "#FEF3E2", "sub": "Produksi Rutin", "deadline": "18 Okt, 13:00 WIB", "qty": 25, "status": "Menunggu", "st": "wait" },
+    { "id": "ORD-004", "act": "Roti Manis", "emoji": "🍞", "tint": "#FDE8E8", "sub": "Produksi Rutin", "deadline": "17 Okt, 08:00 WIB", "qty": 60, "status": "Selesai", "st": "done" },
+    { "id": "ORD-005", "act": "Snack Box Kampus", "emoji": "🧺", "tint": "#E7F6EE", "sub": "Pesanan Khusus • Instansi", "deadline": "16 Okt, 10:00 WIB", "qty": 120, "status": "Selesai", "st": "done" }
+  ]
+}

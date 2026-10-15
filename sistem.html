@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>TEFA Bakery — Prescriptive DSS Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#E9ECF2; --card:#fff; --line:#ECEFF5; --line2:#F1F4F9;
+  --ink:#101828; --muted:#667085; --faint:#98A2B3;
+  --green:#12A15C; --green-dark:#0B6B45; --green-soft:#E7F6EE; --green-text:#12915A;
+  --amber:#D97706; --amber-soft:#FEF3E2; --red:#DC2626; --red-soft:#FEE2E2;
+  --blue:#2563EB; --blue-soft:#EAF1FE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);padding:28px 20px;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;border:none;background:none;cursor:pointer;color:inherit}
+input{font-family:inherit}
+svg{display:block}
+.shell{max-width:1400px;margin:0 auto;background:var(--card);border-radius:26px;box-shadow:0 24px 70px rgba(16,24,40,.10);display:flex;overflow:hidden;min-height:920px}
+
+/* ---------- Sidebar ---------- */
+.sidebar{width:252px;flex-shrink:0;border-right:1px solid var(--line);padding:22px 18px;display:flex;flex-direction:column}
+.logo{display:flex;align-items:center;gap:10px;padding:2px 4px 16px}
+.logo-badge{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#17A05E,#0A5C3C);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(18,161,92,.35)}
+.logo-name{font-size:16.5px;font-weight:700;letter-spacing:-.2px}
+.logo-sub{font-size:10.5px;color:var(--faint);font-weight:500;margin-top:1px}
+.search{display:flex;align-items:center;gap:8px;background:#F4F6FA;border-radius:11px;padding:9px 10px;color:var(--faint)}
+.search input{flex:1;border:none;outline:none;background:transparent;font-size:13px;color:var(--ink)}
+.search kbd{font-size:10.5px;color:var(--faint);border:1px solid #E3E7EF;background:#fff;border-radius:6px;padding:2px 6px}
+.nav-label{font-size:10.5px;font-weight:700;letter-spacing:1.4px;color:var(--faint);text-transform:uppercase;margin:16px 6px 6px}
+.nav{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;font-size:13.5px;font-weight:500;color:#5B6474;cursor:pointer;transition:.15s}
+.nav:hover{background:#F4F6FA;color:var(--ink)}
+.nav.active{background:#101828;color:#fff;font-weight:600;box-shadow:0 8px 18px rgba(16,24,40,.25)}
+.nav-badge{margin-left:auto;font-size:10.5px;font-weight:600;background:#EDF0F6;color:#667085;border-radius:999px;padding:2px 8px}
+.nav.active .nav-badge{background:rgba(255,255,255,.16);color:#fff}
+.promo{margin-top:auto;background:linear-gradient(160deg,#F6F8FB,#EEF6F1);border:1px solid var(--line);border-radius:16px;padding:14px}
+.promo h4{font-size:13.5px;font-weight:700}
+.promo p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:5px 0 10px}
+.promo-actions{display:flex;gap:8px}
+.btn-mini{flex:1;font-size:11.5px;font-weight:600;border-radius:9px;padding:7px 0;text-align:center}
+.btn-mini.green{background:var(--green-dark);color:#fff}
+.btn-mini.ghost{background:#fff;border:1px solid var(--line);color:#344054}
+
+/* ---------- Main & topbar ---------- */
+.main{flex:1;min-width:0;padding:20px 26px 28px;overflow-y:auto;max-height:920px}
+.topbar{display:flex;align-items:center;gap:12px;padding-bottom:16px;border-bottom:1px solid var(--line2)}
+.icon-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:#475467;background:#fff;transition:.15s;flex-shrink:0}
+.icon-btn:hover{background:#F4F6FA}
+.crumbs{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);font-weight:500}
+.crumbs b{color:var(--ink);font-weight:600}
+.crumbs .sep{color:#C6CCD8}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.user{display:flex;align-items:center;gap:9px;padding:4px 6px}
+.avatar{width:34px;height:34px;border-radius:50%;background:#FDEBD3;display:flex;align-items:center;justify-content:center;font-size:17px}
+.user-name{font-size:13px;font-weight:600;line-height:1.1}
+.user-role{font-size:10.5px;color:var(--faint)}
+.btn-export{display:flex;align-items:center;gap:7px;background:var(--green-dark);color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:11px;box-shadow:0 8px 16px rgba(11,107,69,.25)}
+.btn-export:hover{background:#0A5E3D}
+
+/* ---------- Page head & stat cards ---------- */
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;margin:18px 0 14px;gap:12px;flex-wrap:wrap}
+.page-head h1{font-size:21px;font-weight:800;letter-spacing:-.3px}
+.page-head .sub{font-size:12.5px;color:var(--muted);margin-top:3px}
+.head-actions{display:flex;gap:10px}
+.pill{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:#fff;border-radius:11px;padding:8px 13px;font-size:12.5px;font-weight:600;color:#344054}
+.pill:hover{background:#F8FAFC}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.03)}
+.stat{display:flex;flex-direction:column;gap:12px}
+.stat-top{display:flex;align-items:center;gap:11px}
+.stat-ico{width:40px;height:40px;border-radius:12px;background:#F4F6FA;display:flex;align-items:center;justify-content:center;color:#344054;flex-shrink:0}
+.stat-title{font-size:14px;font-weight:700}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.dots-btn{margin-left:auto;color:#C4CBD6;display:flex;padding:2px}
+.dots-btn:hover{color:#667085}
+.stat-val{font-size:25px;font-weight:800;letter-spacing:-.5px}
+.stat-val small{font-size:14px;font-weight:700;color:var(--muted)}
+.badge{display:inline-flex;align-items:center;background:var(--green-soft);color:var(--green-text);font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 9px;margin-left:10px;vertical-align:middle}
+.stat.green{background:linear-gradient(135deg,#159A5B 0%,#0B6B45 100%);border:none;color:#fff;box-shadow:0 16px 34px rgba(11,107,69,.35)}
+.stat.green .stat-ico{background:rgba(255,255,255,.16);color:#fff}
+.stat.green .stat-sub{color:rgba(255,255,255,.75)}
+.stat.green .badge{background:rgba(255,255,255,.18);color:#fff}
+.stat.green .dots-btn{color:rgba(255,255,255,.6)}
+.stat-foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;padding-top:6px}
+.stat.green .stat-foot{color:rgba(255,255,255,.92)}
+.foot-arrow{width:30px;height:30px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;opacity:.75}
+
+/* ---------- Rows & cards ---------- */
+.row{display:grid;gap:16px;margin-top:16px}
+.row.reco{grid-template-columns:5fr 7fr}
+.row.param{grid-template-columns:7fr 5fr}
+.card-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px}
+.card-head h3{font-size:15px;font-weight:700}
+.card-head .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.card-head .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.chip-status{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;border-radius:999px;padding:4px 10px;white-space:nowrap}
+.chip-status .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.chip-status.ok{background:var(--green-soft);color:var(--green-text)}
+.chip-status.warn{background:var(--amber-soft);color:var(--amber)}
+.chip-status.err{background:var(--red-soft);color:var(--red)}
+.infeasible{margin-top:12px;background:var(--red-soft);color:var(--red);font-size:12px;font-weight:600;padding:10px 12px;border-radius:10px}
+
+/* ---------- Tiles rekomendasi ---------- */
+.tile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{border:1px solid var(--line);border-radius:14px;padding:13px 14px;display:flex;flex-direction:column;gap:6px;transition:.15s}
+.tile:hover{border-color:#DCE3ED;box-shadow:0 6px 16px rgba(16,24,40,.06)}
+.tile-top{display:flex;align-items:center;gap:9px}
+.tile-ico{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.tile-name{font-size:12.5px;font-weight:600;color:#344054}
+.tile-val{font-size:19px;font-weight:800;letter-spacing:-.3px}
+.tile-val small{font-size:12px;font-weight:600;color:var(--muted)}
+.tile-sub{font-size:11px;color:var(--muted)}
+.tile-status{align-self:flex-start;font-size:10.5px;font-weight:700;border-radius:999px;padding:3px 9px}
+.tile-status.ok{background:var(--green-soft);color:var(--green-text)}
+.tile-status.warn{background:var(--amber-soft);color:var(--amber)}
+
+/* ---------- Chart ---------- */
+.chart-head{display:flex;align-items:flex-start;gap:10px}
+.chart-label{font-size:12.5px;color:var(--muted);font-weight:500}
+.chart-big{font-size:23px;font-weight:800;letter-spacing:-.4px;margin-top:2px}
+.seg{margin-left:auto;display:flex;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px;gap:3px}
+.seg button{font-size:12px;font-weight:600;padding:6px 14px;border-radius:999px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.seg button.on{background:var(--green-dark);color:#fff}
+.segdot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.7}
+.plot{position:relative;height:230px;margin-top:26px}
+.gridline{position:absolute;left:0;right:0;border-top:1px dashed #EEF1F6}
+.gridline span{position:absolute;left:0;top:-8px;font-size:10.5px;color:var(--faint);background:#fff;padding-right:6px}
+.plot-cols{position:absolute;inset:0 0 0 40px;display:flex;gap:10px}
+.col{flex:1;position:relative;display:flex;align-items:flex-end;justify-content:center;cursor:pointer}
+.bar{position:relative;width:70%;max-width:44px;border-radius:9px;background:linear-gradient(180deg,#C7E7D4,#EAF6EF);transition:height .45s cubic-bezier(.22,1,.36,1),filter .15s}
+.col:hover .bar{filter:brightness(.95)}
+.bar.hot{background:linear-gradient(180deg,#128A53,#0B6B45)}
+.bar.hot::before{content:'';position:absolute;top:-5px;left:50%;transform:translateX(-50%);width:9px;height:9px;border-radius:50%;background:#0B6B45;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.tip{position:absolute;z-index:5;background:#101828;color:#fff;border-radius:12px;padding:10px 13px;font-size:11px;width:max-content;box-shadow:0 14px 30px rgba(16,24,40,.35);pointer-events:none;transform:translateX(-50%)}
+.t-title{font-weight:700;font-size:11.5px;margin-bottom:6px}
+.t-row{display:flex;justify-content:space-between;gap:16px;color:#B7C0D4;margin-top:2px}
+.t-row b{color:#fff;font-weight:600}
+.xlabels{display:flex;gap:10px;margin:10px 0 0 40px}
+.xlabels span{flex:1;text-align:center;font-size:11px;color:var(--faint);font-weight:500}
+
+/* ---------- Slider ---------- */
+.sliders{display:grid;grid-template-columns:1fr 1fr;gap:16px 26px}
+.srow{display:flex;flex-direction:column;gap:9px}
+.srow-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.srow-top label{font-size:12.5px;font-weight:600;color:#344054}
+.sval{font-size:11.5px;font-weight:700;color:var(--green-text);background:var(--green-soft);border-radius:999px;padding:3px 10px;white-space:nowrap}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:999px;background:linear-gradient(90deg,var(--green) var(--fill,50%),#EDF0F6 var(--fill,50%));outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:#fff;border:2px solid var(--green-dark);box-shadow:0 2px 6px rgba(16,24,40,.2);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:#fff;border:2px solid var(--green-dark);cursor:pointer}
+.formula{margin-top:16px;background:#F8FAFC;border:1px dashed #DDE3EC;border-radius:12px;padding:10px 13px;font-size:11.5px;color:var(--muted);line-height:1.7}
+.formula b{color:#344054}
+
+/* ---------- Efisiensi ---------- */
+.bars{display:flex;flex-direction:column;gap:13px}
+.btop{display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:#344054;margin-bottom:6px;gap:8px}
+.btop em{font-style:normal;color:var(--faint);font-weight:500;font-size:11px;white-space:nowrap}
+.track{height:8px;border-radius:999px;background:#F1F4F9;overflow:hidden}
+.fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#1FAE6A,#0B6B45);transition:width .5s ease}
+.fill.warn{background:linear-gradient(90deg,#F6B455,#D97706)}
+.divider{height:1px;background:var(--line2);margin:14px 0}
+.chips2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chip{background:#F8FAFC;border:1px solid var(--line2);border-radius:11px;padding:9px 11px}
+.cname{font-size:11.5px;font-weight:600;color:#344054;display:flex;justify-content:space-between;gap:6px}
+.cname em{font-style:normal;color:var(--faint);font-weight:500;font-size:10.5px;white-space:nowrap}
+.ctrack{height:4px;background:#E9EDF4;border-radius:999px;margin-top:7px;overflow:hidden}
+.cfill{height:100%;border-radius:999px}
+
+/* ---------- Tabel ---------- */
+.table-tools{display:flex;align-items:center;gap:10px}
+.tsearch{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:11px;padding:8px 12px;color:var(--faint);width:220px}
+.tsearch input{border:none;outline:none;flex:1;font-size:12.5px;background:transparent;color:var(--ink)}
+table{width:100%;border-collapse:collapse;margin-top:4px}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--faint);font-weight:600;text-align:left;padding:10px;border-bottom:1px solid var(--line2)}
+td{padding:11px 10px;border-bottom:1px solid var(--line2);font-size:12.5px;vertical-align:middle}
+tbody tr:hover{background:#FAFBFD}
+tbody tr:last-child td{border-bottom:none}
+.act{display:flex;align-items:center;gap:10px}
+.act-ico{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.act-name{font-size:12.5px;font-weight:600}
+.act-sub{font-size:10.5px;color:var(--faint);margin-top:1px}
+.st{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;border-radius:999px;padding:4px 11px}
+.st .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.st.done{background:var(--green-soft);color:var(--green-text)}
+.st.process{background:var(--blue-soft);color:var(--blue)}
+.st.wait{background:var(--amber-soft);color:var(--amber)}
+.cbx{width:16px;height:16px;border-radius:5px;border:1.5px solid #CBD2DD;appearance:none;cursor:pointer;position:relative}
+.cbx:checked{background:var(--green-dark);border-color:var(--green-dark)}
+.cbx:checked::after{content:'✓';color:#fff;font-size:10px;position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+
+.placeholder{margin:70px auto;text-align:center;max-width:420px}
+.ph-ico{width:64px;height:64px;border-radius:18px;background:var(--green-soft);color:var(--green-dark);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.placeholder h2{font-size:17px;font-weight:700}
+.placeholder p{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.6}
+.module-page{padding-top:18px}
+.module-intro{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px}
+.module-intro h1{font-size:21px;font-weight:800;letter-spacing:-.3px}
+.module-intro p{font-size:12.5px;color:var(--muted);margin-top:4px;max-width:650px;line-height:1.55}
+.module-actions{display:flex;gap:8px;flex-wrap:wrap}
+.primary-btn{display:inline-flex;align-items:center;gap:7px;background:var(--green-dark);color:#fff;font-size:12.5px;font-weight:700;padding:9px 14px;border-radius:10px;box-shadow:0 7px 14px rgba(11,107,69,.18)}
+.primary-btn:hover{background:#095a3b}
+.module-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.module-grid.two{grid-template-columns:1.2fr .8fr}
+.module-grid.four{grid-template-columns:repeat(4,1fr)}
+.metric-card{padding:16px 17px}
+.metric-label{font-size:11.5px;color:var(--muted);font-weight:600}
+.metric-value{font-size:22px;font-weight:800;margin-top:8px;letter-spacing:-.4px}
+.metric-note{font-size:11px;color:var(--faint);margin-top:6px}
+.trend-up{color:var(--green-text);font-weight:700}
+.module-card-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.module-card-title h3{font-size:15px;font-weight:700}
+.module-card-title p{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+.module-list{display:flex;flex-direction:column;gap:10px}
+.module-list-row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--line2)}
+.module-list-row:last-child{border-bottom:0;padding-bottom:0}
+.row-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--green-dark);background:var(--green-soft);flex-shrink:0}
+.row-main{min-width:0;flex:1}
+.row-main strong{display:block;font-size:12.5px}
+.row-main span{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.row-end{text-align:right;font-size:12px;font-weight:700;white-space:nowrap}
+.row-end small{display:block;color:var(--muted);font-size:10.5px;font-weight:500;margin-top:3px}
+.data-table-wrap{overflow-x:auto}
+.data-table{margin-top:0;min-width:620px}
+.data-table th{padding:10px 8px}
+.data-table td{padding:12px 8px}
+.progress-label{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;font-weight:600;margin-bottom:7px}
+.progress-label span:last-child{color:var(--muted);font-weight:500}
+.progress-item{margin-bottom:16px}
+.progress-item:last-child{margin-bottom:0}
+.empty-module{padding:28px;text-align:center;color:var(--muted);font-size:12.5px;background:#F8FAFC;border:1px dashed #DDE3EC;border-radius:12px}
+.schedule-grid{display:grid;grid-template-columns:100px repeat(5,1fr);gap:7px;font-size:11px}
+.schedule-cell{min-height:52px;border:1px solid var(--line2);border-radius:9px;padding:8px;background:#FBFCFE}
+.schedule-cell.head{min-height:auto;background:#F4F7FA;color:var(--muted);font-weight:700;text-align:center}
+.schedule-cell.time{display:flex;align-items:center;color:var(--muted);font-weight:600}
+.schedule-block{background:var(--green-soft);border:1px solid #C7EBD6;color:var(--green-dark);font-weight:700}
+.schedule-block.blue{background:var(--blue-soft);border-color:#D3E0FC;color:#2456B9}
+.schedule-block.amber{background:var(--amber-soft);border-color:#FCE2B7;color:#A85D05}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line2)}
+.setting-row:last-child{border-bottom:0}
+.setting-row strong{font-size:12.5px}
+.setting-row span{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.toggle{width:40px;height:23px;padding:3px;border-radius:999px;background:#D5DCE6;display:flex;align-items:center}
+.toggle.on{background:var(--green-dark);justify-content:flex-end}
+.toggle i{display:block;width:17px;height:17px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.help-card{display:flex;gap:12px;align-items:flex-start;padding:14px;background:#F8FAFC;border:1px solid var(--line2);border-radius:12px}
+.help-card b{font-size:12.5px}
+.help-card p{font-size:11.5px;color:var(--muted);line-height:1.55;margin-top:4px}
+@media (max-width:1180px){.module-grid.four{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:900px){.module-grid,.module-grid.two,.module-grid.four{grid-template-columns:1fr}.module-intro{align-items:flex-start;flex-direction:column}.module-actions{width:100%}.module-actions .primary-btn,.module-actions .pill{flex:1;justify-content:center}}
+
+@media (max-width:1180px){.row.reco,.row.param{grid-template-columns:1fr}.stat-grid{grid-template-columns:1fr 1fr}}
+@media (max-width:900px){.sidebar{display:none}.stat-grid{grid-template-columns:1fr}.sliders{grid-template-columns:1fr}.main{max-height:none}}
+@media print{body{background:#fff;padding:0}.sidebar{display:none}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+const {useState, useMemo} = React;
+
+/* ================= IKON ================= */
+const ICONS = {
+  grid:<g><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></g>,
+  trend:<g><path d="M3 17l5.5-5.5 3.5 3.5L21 7"/><path d="M15 7h6v6"/></g>,
+  box:<g><path d="M21 8.2 12 3 3 8.2v7.6L12 21l9-5.2V8.2z"/><path d="M3 8.2l9 5.2 9-5.2"/><path d="M12 13.4V21"/></g>,
+  receipt:<g><path d="M6 3h12v18l-2.4-1.6L13.2 21l-2.4-1.6L8.4 21 6 19.4V3z"/><path d="M9.5 8h5M9.5 12h5"/></g>,
+  doc:<g><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h5M10 16h5"/></g>,
+  layers:<g><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="M3 13l9 5 9-5"/></g>,
+  gear:<g><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></g>,
+  help:<g><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.6 2.3c-.8.4-1.2 1-1.2 1.9"/><path d="M12 16.8h.01"/></g>,
+  logout:<g><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5"/><path d="M21 12H10"/></g>,
+  search:<g><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5 16.6 16.6"/></g>,
+  bell:<g><path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9z"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></g>,
+  mail:<g><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></g>,
+  chevD:<path d="m6 9 6 6 6-6"/>,
+  chevUD:<g><path d="m8 9 4-4 4 4"/><path d="m8 15 4 4 4-4"/></g>,
+  arrowR:<g><path d="M4.5 12h15"/><path d="m13.5 6 6 6-6 6"/></g>,
+  filter:<path d="M3.5 5h17l-6.8 8v5.5l-3.4-1.8V13L3.5 5z"/>,
+  refresh:<g><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20.5 3.5V9H15"/></g>,
+  download:<g><path d="M12 15V3.5"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17"/></g>,
+  wallet:<g><rect x="2.8" y="6" width="18.4" height="13" rx="3"/><path d="M2.8 10.5h18.4"/><circle cx="17" cy="14.7" r="1.1" fill="currentColor" stroke="none"/></g>,
+  coins:<g><circle cx="9" cy="9" r="5.5"/><path d="M14.2 8.6a5.5 5.5 0 1 1-5.6 6.8"/></g>,
+  target:<g><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></g>,
+  dots:<g fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></g>,
+  dotsV:<g fill="currentColor" stroke="none"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></g>,
+};
+const Icon = ({name,size=18,style}) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor"
+       strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={style}>{ICONS[name]}</svg>
+);
+
+/* ================= DATA SINTETIS (sesuai PDF) ================= */
+// oven/mixer/sdm = menit per unit. Mixer tidak disebut di PDF → asumsi.
+const PRODUCTS = [
+  {id:'PRD01',name:'Roti Manis',price:5000,hpp:3000,margin:2000,oven:2,mixer:1,sdm:1,dmax:250,
+   bom:{RM001:0.05,RM002:0.01,RM003:0.01,RM004:0.015,RM005:0.5}},
+  {id:'PRD02',name:'Roti Tawar',price:15000,hpp:9000,margin:6000,oven:5,mixer:2,sdm:3,dmax:100,
+   bom:{RM001:0.25,RM002:0.01,RM003:0.02,RM004:0.02,RM005:1}},
+  {id:'PRD03',name:'Roti Kering (Bagelan)',price:12000,hpp:7000,margin:5000,oven:3,mixer:1.5,sdm:2,dmax:100,
+   bom:{RM001:0.15,RM002:0.01,RM003:0.03,RM004:0.03,RM005:0.3}},
+];
+const MATERIALS = [
+  {id:'RM001',name:'Tepung Terigu',unit:'kg',stock:50},
+  {id:'RM002',name:'Telur Ayam',unit:'kg',stock:20},
+  {id:'RM003',name:'Mentega / Butter',unit:'kg',stock:10},
+  {id:'RM004',name:'Gula Pasir',unit:'kg',stock:15},
+  {id:'RM005',name:'Ragi (Yeast)',unit:'gr',stock:500},
+];
+const DEFAULTS = {modal:750000, ovenJam:8, mixerJam:4, sdmJam:16, orderMin:150};
+const LABA_KEMARIN = 452000;
+
+const DAILY = [
+  {label:'Sen',title:'Senin, 12 Okt 2026',laba:285000,pendapatan:712000},
+  {label:'Sel',title:'Selasa, 13 Okt 2026',laba:312000,pendapatan:795000},
+  {label:'Rab',title:'Rabu, 14 Okt 2026',laba:268000,pendapatan:672000},
+  {label:'Kam',title:'Kamis, 15 Okt 2026',laba:344000,pendapatan:878000},
+  {label:'Jum',title:'Jumat, 16 Okt 2026',laba:378000,pendapatan:958000},
+  {label:'Sab',title:'Sabtu, 17 Okt 2026',laba:452000,pendapatan:1141000},
+];
+const WEEKLY = [
+  {label:'P1',title:'Minggu ke-1 • Okt 2026',laba:1980000,pendapatan:5120000},
+  {label:'P2',title:'Minggu ke-2 • Okt 2026',laba:2240000,pendapatan:5780000},
+  {label:'P3',title:'Minggu ke-3 • Okt 2026',laba:2050000,pendapatan:5310000},
+];
+const ORDERS = [
+  {id:'ORD-001',act:'Roti Manis',emoji:'🍞',tint:'#FDE8E8',sub:'Pesanan Khusus • Prioritas High',deadline:'Besok, 09:00 WIB',qty:150,status:'Diproses',st:'process'},
+  {id:'ORD-002',act:'Roti Tawar',emoji:'🥖',tint:'#EAF1FE',sub:'Produksi Rutin',deadline:'Hari ini, 07:30 WIB',qty:40,status:'Selesai',st:'done'},
+  {id:'ORD-003',act:'Roti Kering (Bagelan)',emoji:'🥨',tint:'#FEF3E2',sub:'Produksi Rutin',deadline:'18 Okt, 13:00 WIB',qty:25,status:'Menunggu',st:'wait'},
+  {id:'ORD-004',act:'Roti Manis',emoji:'🍞',tint:'#FDE8E8',sub:'Produksi Rutin',deadline:'17 Okt, 08:00 WIB',qty:60,status:'Selesai',st:'done'},
+  {id:'ORD-005',act:'Snack Box Kampus',emoji:'🧺',tint:'#E7F6EE',sub:'Pesanan Khusus • Instansi',deadline:'16 Okt, 10:00 WIB',qty:120,status:'Selesai',st:'done'},
+];
+
+/* ================= SOLVER MILP (mendukung pesanan khusus X1 >= Dmin) ================= */
+function solveMILP(p){
+  const [A,B,C] = PRODUCTS;
+  const modal=p.modal, oven=p.ovenJam*60, mixer=p.mixerJam*60, sdm=p.sdmJam*60;
+  const caps = {modal,oven,mixer,sdm};
+  const usage={}, remain={};
+  MATERIALS.forEach(m=>{usage[m.id]=0; remain[m.id]=m.stock;});
+  const zero = {status:'Infeasible',x1:0,x2:0,x3:0,profit:0,revenue:0,
+                used:{modal:0,oven:0,mixer:0,sdm:0},usage,remain,caps};
+  const capA = Math.min(A.dmax, Math.floor(oven/A.oven), Math.floor(mixer/A.mixer), Math.floor(sdm/A.sdm));
+  if(p.orderMin > capA) return zero;                 // pesanan khusus tidak feasible
+  let best = null;
+  for(let x1=p.orderMin; x1<=capA; x1++){
+    const rm=modal-x1*A.hpp, ro=oven-x1*A.oven, rx=mixer-x1*A.mixer, rs=sdm-x1*A.sdm;
+    if(rm<0||ro<0||rx<0||rs<0) break;
+    const capB = Math.min(B.dmax, Math.floor(rm/B.hpp), Math.floor(ro/B.oven),
+                          Math.floor(rx/B.mixer), Math.floor(rs/B.sdm));
+    for(let x2=0; x2<=capB; x2++){
+      const m2 = rm - x2*B.hpp;
+      const x3 = Math.max(0, Math.min(C.dmax, Math.floor(m2/C.hpp),
+        Math.floor((ro-x2*B.oven)/C.oven), Math.floor((rx-x2*B.mixer)/C.mixer),
+        Math.floor((rs-x2*B.sdm)/C.sdm)));
+      const profit = x1*A.margin + x2*B.margin + x3*C.margin;
+      if(!best || profit>best.profit) best = {x1,x2,x3,profit};
+    }
+  }
+  if(!best) return zero;
+  const xs=[best.x1,best.x2,best.x3];
+  const used = {
+    modal: xs.reduce((s,x,i)=>s+x*PRODUCTS[i].hpp,0),
+    oven:  xs.reduce((s,x,i)=>s+x*PRODUCTS[i].oven,0),
+    mixer: xs.reduce((s,x,i)=>s+x*PRODUCTS[i].mixer,0),
+    sdm:   xs.reduce((s,x,i)=>s+x*PRODUCTS[i].sdm,0),
+  };
+  MATERIALS.forEach(m=>{
+    usage[m.id]  = xs.reduce((s,x,i)=>s + x*(PRODUCTS[i].bom[m.id]||0),0);
+    remain[m.id] = m.stock - usage[m.id];
+  });
+  return {status:'Optimal',x1:best.x1,x2:best.x2,x3:best.x3,profit:best.profit,
+          revenue: xs.reduce((s,x,i)=>s+x*PRODUCTS[i].price,0), used,usage,remain,caps};
+}
+
+/* ================= UTIL ================= */
+const rp = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+const fmtAxis = v => v===0 ? '0' : v>=1e6 ? (v/1e6).toFixed(1).replace('.0','').replace('.',',')+'jt' : Math.round(v/1e3)+'rb';
+const fmtQty = v => v.toFixed(1).replace('.',',');
+const niceMax = v => { const s = v>=1.5e6?5e5 : v>=8e5?2e5 : 1e5; return Math.ceil(v/s)*s; };
+
+/* ================= KOMPONEN ================= */
+function Sidebar({page,setPage,goParams}){
+  const groups = [
+    {label:'Menu Utama',items:[
+      {id:'Dashboard',icon:'grid'},
+      {id:'Optimasi',icon:'target',badge:'MILP'},
+      {id:'Bahan Baku',icon:'box',badge:'5'},
+      {id:'Pesanan',icon:'receipt',badge:'2'},
+    ]},
+    {label:'Fitur',items:[
+      {id:'Peramalan',icon:'trend'},
+      {id:'Penjadwalan',icon:'layers'},
+      {id:'Laporan',icon:'doc'},
+    ]},
+    {label:'Umum',items:[
+      {id:'Pengaturan',icon:'gear'},
+      {id:'Bantuan',icon:'help'},
+      {id:'Keluar',icon:'logout'},
+    ]},
+  ];
+  return (
+    <aside className="sidebar">
+      <div className="logo">
+        <div className="logo-badge">🥐</div>
+        <div><div className="logo-name">TEFA Bakery</div><div className="logo-sub">PDSS • Politeknik X</div></div>
+      </div>
+      <div className="search"><Icon name="search" size={15}/><input placeholder="Search"/><kbd>⌘ K</kbd></div>
+      {groups.map(g=>(
+        <div key={g.label}>
+          <div className="nav-label">{g.label}</div>
+          {g.items.map(it=>(
+            <div key={it.id} className={'nav'+(page===it.id?' active':'')} onClick={()=>setPage(it.id)}>
+              <Icon name={it.icon} size={17}/>{it.id}
+              {it.badge && <span className="nav-badge">{it.badge}</span>}
+            </div>
+          ))}
+        </div>
+      ))}
+      <div className="promo">
+        <h4>Solver Engine ✨</h4>
+        <p>Optimasi MILP &amp; peramalan permintaan untuk keputusan produksi yang terukur.</p>
+        <div className="promo-actions">
+          <button className="btn-mini green" onClick={goParams}>Coba Solver</button>
+          <button className="btn-mini ghost">Dokumen</button>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function ChartCard({data,mode,setMode}){
+  const [hover,setHover] = useState(null);
+  const n = data.length;
+  const maxV = niceMax(Math.max(...data.map(d=>d.laba)));
+  const active = hover==null ? n-1 : hover;
+  const d = data[active];
+  return (
+    <div className="card">
+      <div className="chart-head">
+        <div>
+          <div className="chart-label">Proyeksi Laba Bersih</div>
+          <div className="chart-big">{rp(d.laba)}</div>
+        </div>
+        <div className="seg">
+          <button className={mode==='harian'?'on':''} onClick={()=>setMode('harian')}>Harian</button>
+          <button className={mode==='mingguan'?'on':''} onClick={()=>setMode('mingguan')}><span className="segdot"></span>Mingguan</button>
+        </div>
+      </div>
+      <div className="plot">
+        {[0,.25,.5,.75,1].map(t=>(
+          <div key={t} className="gridline" style={{bottom:(t*100)+'%'}}>
+            <span>{t===0?'0':fmtAxis(maxV*t)}</span>
+          </div>
+        ))}
+        <div className="plot-cols">
+          {data.map((dd,i)=>{
+            const h = Math.max(2, dd.laba/maxV*100);
+            const hot = i===active;
+            const tipStyle = i===0 ? {left:6,transform:'none'}
+                          : i===n-1 ? {right:6,left:'auto',transform:'none'} : {};
+            return (
+              <div key={i} className="col" onMouseEnter={()=>setHover(i)} onMouseLeave={()=>setHover(null)}>
+                {hot &&
+                  <div className="tip" style={{bottom:`calc(${h}% + 16px)`,...tipStyle}}>
+                    <div className="t-title">{dd.title}</div>
+                    <div className="t-row"><span>Pendapatan</span><b>{rp(dd.pendapatan)}</b></div>
+                    <div className="t-row"><span>Laba Bersih</span><b>{rp(dd.laba)}</b></div>
+                  </div>}
+                <div className={'bar'+(hot?' hot':'')} style={{height:h+'%'}}></div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="xlabels">
+        {data.map((dd,i)=><span key={i} style={i===active?{color:'#101828',fontWeight:700}:{}}>{dd.label}</span>)}
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const [page,setPage]   = useState('Dashboard');
+  const [params,setParams] = useState(DEFAULTS);
+  const [mode,setMode]   = useState('harian');
+  const res   = useMemo(()=>solveMILP(params),[params]);
+  const set   = k => e => setParams(p=>({...p,[k]:+e.target.value}));
+  const reset = () => setParams(DEFAULTS);
+  const goParams = () => { setPage('Dashboard'); setTimeout(()=>{
+    const el=document.getElementById('parameter'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+  },60); };
+
+  const chartData = useMemo(()=>{
+    const base = mode==='harian' ? DAILY : WEEKLY;
+    const live = mode==='harian'
+      ? {label:'Min', title:'Minggu, 18 Okt 2026 • hasil optimasi', laba:res.profit, pendapatan:res.revenue}
+      : {label:'P4',  title:'Minggu ke-4 • berjalan (live)',        laba:res.profit, pendapatan:res.revenue};
+    return [...base, live];
+  },[mode,res]);
+
+  const totalUnit = res.x1+res.x2+res.x3;
+  const delta = (res.profit-LABA_KEMARIN)/LABA_KEMARIN*100;
+  const deltaStr = (delta>=0?'▲ ':'▼ ') + Math.abs(delta).toFixed(1).replace('.',',') + '%';
+  const modalPct = Math.round(res.used.modal/params.modal*100);
+
+  const tiles = [
+    {emoji:'🍞',tint:'#FDE8E8',name:'Roti Manis',qty:res.x1,sub:'Margin '+rp(PRODUCTS[0].margin)+' / unit',
+     st: params.orderMin>0 ? ['warn','Pesanan Khusus'] : ['ok','Rutin']},
+    {emoji:'🥖',tint:'#EAF1FE',name:'Roti Tawar',qty:res.x2,sub:'Margin '+rp(PRODUCTS[1].margin)+' / unit',st:['ok','Rutin']},
+    {emoji:'🥨',tint:'#FEF3E2',name:'Roti Kering (Bagelan)',qty:res.x3,sub:'Margin '+rp(PRODUCTS[2].margin)+' / unit',st:['ok','Rutin']},
+    {emoji:'💰',tint:'#E7F6EE',name:'Sisa Modal',val:rp(params.modal-res.used.modal),sub:'Kas belum teralokasi',st:['ok','Optimal']},
+  ];
+
+  const SLIDERS = [
+    {k:'modal',   label:'Modal Bahan Baku',          min:250000,max:2000000,step:50000,fmt:rp},
+    {k:'ovenJam', label:'Kapasitas Oven',            min:2, max:12, step:0.5, fmt:v=>v+' jam'},
+    {k:'mixerJam',label:'Kapasitas Mixer',           min:1, max:8,  step:0.5, fmt:v=>v+' jam'},
+    {k:'sdmJam',  label:'Kapasitas SDM',             min:4, max:24, step:1,   fmt:v=>v+' jam kerja'},
+    {k:'orderMin',label:'Pesanan Khusus — Roti Manis',min:0, max:250,step:5,   fmt:v=>v+' unit (Dmin)'},
+  ];
+
+  const barRow = (label, used, cap, isModal) => {
+    const pct = Math.min(100, used/cap*100);
+    return (
+      <div className="brow" key={label}>
+        <div className="btop"><span>{label}</span>
+          <em>{isModal ? rp(used)+' / '+rp(cap) : Math.round(used)+' / '+cap+' menit'} • {Math.round(pct)}%</em></div>
+        <div className="track"><div className={'fill'+(!isModal&&pct>85?' warn':'')} style={{width:pct+'%'}}/></div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="shell">
+      <Sidebar page={page} setPage={setPage} goParams={goParams}/>
+      <main className="main">
+        {/* ---- Topbar ---- */}
+        <header className="topbar">
+          <button className="icon-btn"><Icon name="arrowR" size={15} style={{transform:'scaleX(-1)'}}/></button>
+          <button className="icon-btn"><Icon name="arrowR" size={15}/></button>
+          <div className="crumbs"><span>TEFA Bakery</span><span className="sep">›</span><b>{page}</b></div>
+          <div className="top-right">
+            <button className="icon-btn"><Icon name="help" size={16}/></button>
+            <button className="icon-btn"><Icon name="mail" size={16}/></button>
+            <button className="icon-btn"><Icon name="bell" size={16}/></button>
+            <div className="user">
+              <div className="avatar">👨‍🍳</div>
+              <div><div className="user-name">Raka Pratama</div><div className="user-role">Manajer Produksi</div></div>
+              <Icon name="chevUD" size={14} style={{color:'#98A2B3'}}/>
+            </div>
+            <button className="btn-export" onClick={()=>window.print()}>
+              <Icon name="download" size={15}/> Export Laporan
+            </button>
+          </div>
+        </header>
+
+        {page!=='Dashboard' ? (
+          <ModulePage page={page} res={res} setPage={setPage}/>
+        ) : (
+        <>
+          {/* ---- Page head ---- */}
+          <div className="page-head">
+            <div>
+              <h1>Overview</h1>
+              <div className="sub">Ringkasan optimalisasi produksi hari ini — solver MILP berjalan otomatis.</div>
+            </div>
+            <div className="head-actions">
+              <button className="pill">Hari Ini <Icon name="chevD" size={14}/></button>
+              <button className="pill" onClick={reset}><Icon name="refresh" size={14}/> Reset Data</button>
+            </div>
+          </div>
+
+          {/* ---- Stat cards ---- */}
+          <section className="stat-grid">
+            <div className="card stat green">
+              <div className="stat-top">
+                <div className="stat-ico"><Icon name="coins" size={19}/></div>
+                <div><div className="stat-title">Estimasi Laba Optimal</div>
+                     <div className="stat-sub">Hasil solver MILP • 18 Okt 2026</div></div>
+                <button className="dots-btn"><Icon name="dotsV" size={16}/></button>
+              </div>
+              <div className="stat-val">{rp(res.profit)}<span className="badge">{deltaStr}</span></div>
+              <div className="stat-foot"><span>Lihat Rincian</span>
+                <span className="foot-arrow"><Icon name="arrowR" size={13}/></span></div>
+            </div>
+            <div className="card stat">
+              <div className="stat-top">
+                <div className="stat-ico"><Icon name="wallet" size={19}/></div>
+                <div><div className="stat-title">Modal Bahan Baku</div>
+                     <div className="stat-sub">Kas harian untuk belanja bahan</div></div>
+                <button className="dots-btn"><Icon name="dotsV" size={16}/></button>
+              </div>
+              <div className="stat-val">{rp(params.modal)}<span className="badge">{modalPct}% terpakai</span></div>
+              <div className="stat-foot" onClick={goParams}><span>Atur Alokasi</span>
+                <span className="foot-arrow"><Icon name="arrowR" size={13}/></span></div>
+            </div>
+            <div className="card stat">
+              <div className="stat-top">
+                <div className="stat-ico"><Icon name="box" size={19}/></div>
+                <div><div className="stat-title">Rekomendasi Produksi</div>
+                     <div className="stat-sub">Total unit optimal • 3 varian</div></div>
+                <button className="dots-btn"><Icon name="dotsV" size={16}/></button>
+              </div>
+              <div className="stat-val">{totalUnit.toLocaleString('id-ID')} <small>unit</small><span className="badge">▲ 4,7%</span></div>
+              <div className="stat-foot"><span>Analisis Performa</span>
+                <span className="foot-arrow"><Icon name="arrowR" size={13}/></span></div>
+            </div>
+          </section>
+
+          {/* ---- Rekomendasi + Chart ---- */}
+          <section className="row reco">
+            <div className="card">
+              <div className="card-head">
+                <div><h3>Rekomendasi Produksi</h3>
+                     <div className="sub">Kombinasi optimal X₁, X₂, X₃ • Mixed-Integer Linear Programming</div></div>
+                <div className="right">
+                  <span className={'chip-status '+(res.status==='Optimal'?'ok':'err')}>
+                    <span className="dot"></span>Solver: {res.status}</span>
+                  <button className="dots-btn"><Icon name="dotsV" size={16}/></button>
+                </div>
+              </div>
+              <div className="tile-grid">
+                {tiles.map((t,i)=>(
+                  <div className="tile" key={i}>
+                    <div className="tile-top">
+                      <div className="tile-ico" style={{background:t.tint}}>{t.emoji}</div>
+                      <div className="tile-name">{t.name}</div>
+                      <button className="dots-btn"><Icon name="dotsV" size={15}/></button>
+                    </div>
+                    {t.val
+                      ? <div className="tile-val">{t.val}</div>
+                      : <div className="tile-val">{t.qty.toLocaleString('id-ID')} <small>unit</small></div>}
+                    <div className="tile-sub">{t.sub}</div>
+                    <span className={'tile-status '+t.st[0]}>{t.st[1]}</span>
+                  </div>
+                ))}
+              </div>
+              {res.status!=='Optimal' &&
+                <div className="infeasible">⚠ Batasan tidak dapat dipenuhi — turunkan pesanan khusus (Dmin) atau tambah modal/kapasitas.</div>}
+            </div>
+            <ChartCard data={chartData} mode={mode} setMode={setMode}/>
+          </section>
+
+          {/* ---- Parameter + Efisiensi ---- */}
+          <section className="row param" id="parameter">
+            <div className="card">
+              <div className="card-head">
+                <div><h3>Parameter &amp; Simulasi</h3>
+                     <div className="sub">Ubah batasan harian — solver menghitung ulang secara real-time</div></div>
+                <div className="right"><span className="chip-status ok"><span className="dot"></span>Live</span></div>
+              </div>
+              <div className="sliders">
+                {SLIDERS.map((s,i)=>(
+                  <div className="srow" key={s.k} style={i===SLIDERS.length-1?{gridColumn:'1 / -1'}:null}>
+                    <div className="srow-top"><label>{s.label}</label><span className="sval">{s.fmt(params[s.k])}</span></div>
+                    <input type="range" min={s.min} max={s.max} step={s.step} value={params[s.k]}
+                           onChange={set(s.k)}
+                           style={{'--fill':((params[s.k]-s.min)/(s.max-s.min)*100)+'%'}}/>
+                  </div>
+                ))}
+              </div>
+              <div className="formula">
+                <b>Fungsi Objektif:</b> Max Z = 2.000·X₁ + 6.000·X₂ + 5.000·X₃<br/>
+                <b>Kendala:</b> 3.000·X₁+9.000·X₂+7.000·X₃ ≤ Modal &nbsp;•&nbsp; 2X₁+5X₂+3X₃ ≤ Oven &nbsp;•&nbsp;
+                1X₁+3X₂+2X₃ ≤ SDM &nbsp;•&nbsp; Dmin ≤ Xi ≤ Dmax &nbsp;•&nbsp; Xi ∈ ℤ⁺
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-head">
+                <div><h3>Efisiensi Sumber Daya</h3>
+                     <div className="sub">Beban kapasitas &amp; estimasi sisa bahan baku</div></div>
+                <div className="right"><button className="pill">Hari Ini <Icon name="chevD" size={13}/></button></div>
+              </div>
+              <div className="bars">
+                {barRow('Modal Bahan Baku', res.used.modal, params.modal, true)}
+                {barRow('Kapasitas Oven',   res.used.oven,  res.caps.oven)}
+                {barRow('Kapasitas Mixer',  res.used.mixer, res.caps.mixer)}
+                {barRow('Kapasitas SDM',    res.used.sdm,   res.caps.sdm)}
+              </div>
+              <div className="divider"></div>
+              <div className="btop"><span style={{fontWeight:700}}>Sisa Bahan Baku (estimasi)</span></div>
+              <div className="chips2">
+                {MATERIALS.map(m=>{
+                  const left = Math.max(0,res.remain[m.id]);
+                  const p2 = left/m.stock*100;
+                  return (
+                    <div className="chip" key={m.id}>
+                      <div className="cname"><span>{m.name}</span><em>{fmtQty(left)} {m.unit}</em></div>
+                      <div className="ctrack">
+                        <div className="cfill" style={{width:p2+'%', background:p2<20?'#F59E0B':'var(--green)'}}/>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          {/* ---- Tabel pesanan ---- */}
+          <OrdersCard/>
+        </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function OrdersCard(){
+  const [q,setQ] = useState('');
+  const [sel,setSel] = useState(()=>new Set());
+  const rows = ORDERS.filter(o=>(o.act+' '+o.id).toLowerCase().includes(q.toLowerCase()));
+  const all = rows.length>0 && rows.every(o=>sel.has(o.id));
+  const toggle = id => setSel(s=>{const n=new Set(s); n.has(id)?n.delete(id):n.add(id); return n;});
+  const toggleAll = () => setSel(s=>{const n=new Set(s);
+    all ? rows.forEach(o=>n.delete(o.id)) : rows.forEach(o=>n.add(o.id)); return n;});
+  return (
+    <div className="card" style={{marginTop:16}}>
+      <div className="card-head">
+        <div><h3>Pesanan &amp; Aktivitas Terbaru</h3>
+             <div className="sub">Pesanan khusus otomatis menjadi constraint minimum (X ≥ Dmin) pada solver</div></div>
+        <div className="right table-tools">
+          <div className="tsearch"><Icon name="search" size={14}/>
+            <input placeholder="Cari pesanan…" value={q} onChange={e=>setQ(e.target.value)}/></div>
+          <button className="pill">Filter <Icon name="filter" size={13}/></button>
+        </div>
+      </div>
+      <table>
+        <thead><tr>
+          <th style={{width:36}}><input type="checkbox" className="cbx" checked={all} onChange={toggleAll}/></th>
+          <th>Aktivitas</th><th>Order ID</th><th>Deadline</th><th>Jumlah</th><th>Status</th><th style={{width:40}}></th>
+        </tr></thead>
+        <tbody>
+          {rows.map(o=>(
+            <tr key={o.id}>
+              <td><input type="checkbox" className="cbx" checked={sel.has(o.id)} onChange={()=>toggle(o.id)}/></td>
+              <td><div className="act">
+                <div className="act-ico" style={{background:o.tint}}>{o.emoji}</div>
+                <div><div className="act-name">{o.act}</div><div className="act-sub">{o.sub}</div></div>
+              </div></td>
+              <td style={{fontWeight:600}}>{o.id}</td>
+              <td>{o.deadline}</td>
+              <td style={{fontWeight:600}}>{o.qty} unit</td>
+              <td><span className={'st '+o.st}><span className="dot"></span>{o.status}</span></td>
+              <td><button className="dots-btn"><Icon name="dots" size={16}/></button></td>
+            </tr>
+          ))}
+          {rows.length===0 && <tr><td colSpan={7} style={{textAlign:'center',color:'var(--faint)',padding:22}}>
+            Tidak ada pesanan yang cocok.</td></tr>}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ModulePage({page,res,setPage}){
+  const go = id => setPage(id);
+  const titles = {
+    Optimasi:['Optimasi Produksi','Tentukan kombinasi produksi paling menguntungkan berdasarkan modal, kapasitas, bahan baku, dan pesanan minimum.'],
+    'Bahan Baku':['Bahan Baku','Pantau ketersediaan bahan, kebutuhan resep, dan rekomendasi pembelian sebelum produksi dimulai.'],
+    Pesanan:['Pesanan Pelanggan','Kelola pesanan rutin maupun pesanan khusus yang menjadi batas minimum pada solver.'],
+    Peramalan:['Peramalan Permintaan','Gunakan riwayat penjualan untuk membaca tren kebutuhan produksi pada periode berikutnya.'],
+    Penjadwalan:['Penjadwalan Produksi','Susun urutan produksi berdasarkan deadline, kapasitas mesin, dan ketersediaan tenaga kerja.'],
+    Laporan:['Laporan & Analitik','Rangkum hasil produksi, penggunaan sumber daya, pendapatan, dan laba untuk evaluasi TEFA.'],
+    Pengaturan:['Pengaturan Sistem','Kelola parameter operasional, notifikasi, dan preferensi kerja sistem TEFA.'],
+    Bantuan:['Pusat Bantuan','Pelajari alur penggunaan sistem dan cara membaca rekomendasi produksi.'],
+    Keluar:['Keluar dari Sistem','Pastikan pekerjaan dan perubahan parameter sudah tersimpan sebelum mengakhiri sesi.']
+  };
+  const [title,description] = titles[page];
+  if(page==='Keluar') return (
+    <div className="module-page">
+      <div className="card" style={{maxWidth:560,margin:'70px auto',textAlign:'center'}}>
+        <div className="ph-ico"><Icon name="logout" size={26}/></div>
+        <h2 style={{fontSize:18}}>Akhiri sesi Manajer Produksi?</h2>
+        <p style={{fontSize:12.5,color:'var(--muted)',lineHeight:1.6,margin:'8px auto 20px'}}>Data simulasi saat ini tetap tersimpan di halaman ini. Anda dapat kembali ke dashboard tanpa kehilangan parameter.</p>
+        <div className="module-actions" style={{justifyContent:'center'}}>
+          <button className="pill" onClick={()=>go('Dashboard')}>Kembali ke Dashboard</button>
+          <button className="primary-btn" onClick={()=>go('Dashboard')}><Icon name="logout" size={15}/> Konfirmasi Keluar</button>
+        </div>
+      </div>
+    </div>
+  );
+  return (
+    <div className="module-page">
+      <div className="module-intro">
+        <div><h1>{title}</h1><p>{description}</p></div>
+        <div className="module-actions">
+          <button className="pill"><Icon name="refresh" size={14}/> Segarkan</button>
+          <button className="primary-btn" onClick={()=>window.print()}><Icon name="download" size={14}/> Export</button>
+        </div>
+      </div>
+      {page==='Optimasi' && <OptimizationModule res={res} go={go}/>}
+      {page==='Bahan Baku' && <MaterialsModule res={res}/>}
+      {page==='Pesanan' && <OrdersModule go={go}/>}
+      {page==='Peramalan' && <ForecastModule res={res}/>}
+      {page==='Penjadwalan' && <ScheduleModule/>}
+      {page==='Laporan' && <ReportsModule res={res}/>}
+      {page==='Pengaturan' && <SettingsModule/>}
+      {page==='Bantuan' && <HelpModule/>}
+    </div>
+  );
+}
+
+function OptimizationModule({res,go}){
+  const rows=[['Roti Manis','X₁',res.x1,'Rp 2.000','Pesanan minimum'],['Roti Tawar','X₂',res.x2,'Rp 6.000','Margin tertinggi'],['Roti Kering (Bagelan)','X₃',res.x3,'Rp 5.000','Kapasitas bahan']];
+  return <><div className="module-grid four">
+    <div className="card metric-card"><div className="metric-label">Status solver</div><div className="metric-value" style={{color:'var(--green-text)'}}>Optimal</div><div className="metric-note">Semua kendala terpenuhi</div></div>
+    <div className="card metric-card"><div className="metric-label">Laba maksimum</div><div className="metric-value">{rp(res.profit)}</div><div className="metric-note">Dari {rp(res.revenue)} pendapatan</div></div>
+    <div className="card metric-card"><div className="metric-label">Total produksi</div><div className="metric-value">{(res.x1+res.x2+res.x3).toLocaleString('id-ID')} <small>unit</small></div><div className="metric-note">3 varian produk</div></div>
+    <div className="card metric-card"><div className="metric-label">Pesanan khusus</div><div className="metric-value">{res.x1} <small>unit</small></div><div className="metric-note">Roti Manis sebagai Dmin</div></div>
+  </div><div className="module-grid two">
+    <div className="card"><div className="module-card-title"><div><h3>Rekomendasi keputusan produksi</h3><p>Kuantitas optimal hasil Mixed-Integer Linear Programming.</p></div><span className="chip-status ok"><span className="dot"></span>Layak</span></div>
+      <div className="data-table-wrap"><table className="data-table"><thead><tr><th>Produk</th><th>Variabel</th><th>Jumlah</th><th>Margin/unit</th><th>Alasan</th></tr></thead><tbody>{rows.map(r=><tr key={r[0]}><td><b>{r[0]}</b></td><td>{r[1]}</td><td><b>{r[2]} unit</b></td><td>{r[3]}</td><td>{r[4]}</td></tr>)}</tbody></table></div>
+    </div>
+    <div className="card"><div className="module-card-title"><div><h3>Langkah berikutnya</h3><p>Jalankan keputusan secara berurutan.</p></div></div><div className="module-list">
+      {['Validasi stok bahan baku','Tetapkan jadwal produksi','Konfirmasi pesanan pelanggan'].map((x,i)=><div className="module-list-row" key={x}><div className="row-icon">{i+1}</div><div className="row-main"><strong>{x}</strong><span>{i===0?'Pastikan kebutuhan resep tersedia':i===1?'Alokasikan oven, mixer, dan SDM':'Kirim waktu selesai ke pelanggan'}</span></div><button className="pill" onClick={()=>go(i===0?'Bahan Baku':i===1?'Penjadwalan':'Pesanan')}>Buka</button></div>)}
+    </div></div>
+  </div></>;
+}
+
+function MaterialsModule({res}){
+  return <><div className="module-grid four">{MATERIALS.map(m=><div className="card metric-card" key={m.id}><div className="metric-label">{m.name}</div><div className="metric-value">{fmtQty(Math.max(0,res.remain[m.id]))} <small>{m.unit}</small></div><div className="metric-note">{res.usage[m.id].toFixed(1).replace('.',',')} {m.unit} dipakai hari ini</div></div>)}</div>
+  <div className="card"><div className="module-card-title"><div><h3>Rekap kebutuhan bahan baku</h3><p>Estimasi sisa stok setelah rekomendasi produksi diterapkan.</p></div><button className="primary-btn"><Icon name="download" size={14}/> Daftar Belanja</button></div><div className="data-table-wrap"><table className="data-table"><thead><tr><th>Bahan</th><th>Stok awal</th><th>Kebutuhan</th><th>Sisa</th><th>Kondisi</th></tr></thead><tbody>{MATERIALS.map(m=>{const left=Math.max(0,res.remain[m.id]);const low=left/m.stock<.2;return <tr key={m.id}><td><b>{m.name}</b><small style={{display:'block',color:'var(--muted)',marginTop:3}}>{m.id}</small></td><td>{fmtQty(m.stock)} {m.unit}</td><td>{fmtQty(res.usage[m.id])} {m.unit}</td><td><b>{fmtQty(left)} {m.unit}</b></td><td><span className={'st '+(low?'wait':'done')}><span className="dot"></span>{low?'Perlu restock':'Aman'}</span></td></tr>})}</tbody></table></div></div></>;
+}
+
+function OrdersModule({go}){
+  return <><div className="module-grid four"><div className="card metric-card"><div className="metric-label">Total pesanan</div><div className="metric-value">5</div><div className="metric-note">Periode berjalan</div></div><div className="card metric-card"><div className="metric-label">Perlu diproses</div><div className="metric-value">2</div><div className="metric-note">Prioritas hari ini</div></div><div className="card metric-card"><div className="metric-label">Selesai</div><div className="metric-value">3</div><div className="metric-note trend-up">60% completion rate</div></div><div className="card metric-card"><div className="metric-label">Unit terpesan</div><div className="metric-value">395</div><div className="metric-note">Semua produk</div></div></div><OrdersCard/><div style={{display:'flex',justifyContent:'flex-end',marginTop:12}}><button className="primary-btn" onClick={()=>go('Optimasi')}>Gunakan pesanan sebagai constraint <Icon name="arrowR" size={14}/></button></div></>;
+}
+
+function ForecastModule({res}){
+  return <><div className="module-grid two"><div className="card"><div className="module-card-title"><div><h3>Proyeksi permintaan 7 hari</h3><p>Baseline dari histori penjualan dan pesanan aktif.</p></div><span className="chip-status ok"><span className="dot"></span>Confidence 86%</span></div><div className="module-list">{['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'].map((d,i)=><div className="module-list-row" key={d}><div className="row-main"><strong>{d}</strong><span>{i<5?'Hari sekolah':'Akhir pekan'}</span></div><div style={{width:'45%'}}><div className="track"><div className="fill" style={{width:(58+i*5)+'%'}}/></div></div><div className="row-end">{110+i*14}<small>unit</small></div></div>)}</div></div><div className="card"><div className="module-card-title"><div><h3>Sinyal permintaan</h3><p>Insight untuk keputusan produksi.</p></div></div><div className="help-card"><div className="row-icon">↑</div><div><b>Tren meningkat</b><p>Permintaan diperkirakan naik 12% pada Jumat–Sabtu. Siapkan stok tepung dan ragi lebih awal.</p></div></div><div style={{height:10}}/><div className="help-card"><div className="row-icon">!</div><div><b>Perhatikan kapasitas</b><p>Oven menjadi sumber daya paling sibuk pada skenario saat ini.</p></div></div></div></div><div className="card"><div className="module-card-title"><div><h3>Rekomendasi pembaruan solver</h3><p>Forecast menjadi input untuk Dmax dan prioritas produksi.</p></div><button className="primary-btn">Terapkan ke Optimasi</button></div><div className="formula"><b>Output model:</b> Roti Manis {res.x1} unit • Roti Tawar {res.x2} unit • Bagelan {res.x3} unit</div></div></>;
+}
+
+function ScheduleModule(){
+  const cells=[['07.00–09.00','Roti Manis','Roti Manis','Roti Tawar','Roti Tawar','Bagelan'],['09.00–11.00','Roti Tawar','Bagelan','Roti Manis','Bagelan','Roti Manis'],['13.00–15.00','Bagelan','Roti Manis','Roti Tawar','Roti Manis','Bagelan']];
+  return <><div className="module-grid four"><div className="card metric-card"><div className="metric-label">Shift aktif</div><div className="metric-value">2</div><div className="metric-note">Pagi & siang</div></div><div className="card metric-card"><div className="metric-label">Beban oven</div><div className="metric-value">84%</div><div className="metric-note">Kapasitas tertinggi</div></div><div className="card metric-card"><div className="metric-label">Beban SDM</div><div className="metric-value">71%</div><div className="metric-note">16 jam tersedia</div></div><div className="card metric-card"><div className="metric-label">Deadline aman</div><div className="metric-value">5/5</div><div className="metric-note trend-up">Tidak ada keterlambatan</div></div></div><div className="card"><div className="module-card-title"><div><h3>Jadwal produksi mingguan</h3><p>Urutan dibuat dari deadline pesanan dan efisiensi kapasitas mesin.</p></div><span className="chip-status ok"><span className="dot"></span>Sinkron</span></div><div className="schedule-grid"><div className="schedule-cell head">Jam</div>{['Sen','Sel','Rab','Kam','Jum'].map(x=><div className="schedule-cell head" key={x}>{x}<small style={{display:'block',fontWeight:500,marginTop:3}}>18 Okt</small></div>)}{cells.map((r,i)=><React.Fragment key={r[0]}><div className="schedule-cell time">{r[0]}</div>{r.slice(1).map((x,j)=><div className={'schedule-cell schedule-block '+(x==='Roti Tawar'?'blue':x==='Bagelan'?'amber':'')} key={j}>{x}<small style={{display:'block',fontWeight:500,marginTop:5}}>{i===0?'Prioritas': 'Rutin'}</small></div>)}</React.Fragment>)}</div></div></>;
+}
+
+function ReportsModule({res}){
+  return <><div className="module-grid four"><div className="card metric-card"><div className="metric-label">Pendapatan</div><div className="metric-value">{rp(res.revenue)}</div><div className="metric-note">Estimasi harian</div></div><div className="card metric-card"><div className="metric-label">Laba bersih</div><div className="metric-value">{rp(res.profit)}</div><div className="metric-note trend-up">Naik dari kemarin</div></div><div className="card metric-card"><div className="metric-label">Margin rata-rata</div><div className="metric-value">{Math.round(res.profit/res.revenue*100)}%</div><div className="metric-note">Setelah biaya bahan</div></div><div className="card metric-card"><div className="metric-label">Utilisasi kapasitas</div><div className="metric-value">84%</div><div className="metric-note">Oven sebagai bottleneck</div></div></div><div className="module-grid two"><div className="card"><div className="module-card-title"><div><h3>Ringkasan performa periode</h3><p>Perbandingan hasil aktual dan proyeksi.</p></div><button className="pill">Oktober 2026 <Icon name="chevD" size={13}/></button></div><div className="progress-item"><div className="progress-label"><span>Target pendapatan</span><span>78%</span></div><div className="track"><div className="fill" style={{width:'78%'}}/></div></div><div className="progress-item"><div className="progress-label"><span>Target laba</span><span>86%</span></div><div className="track"><div className="fill" style={{width:'86%'}}/></div></div><div className="progress-item"><div className="progress-label"><span>Ketepatan deadline</span><span>100%</span></div><div className="track"><div className="fill" style={{width:'100%'}}/></div></div></div><div className="card"><div className="module-card-title"><div><h3>Export tersedia</h3><p>Dokumen siap untuk evaluasi guru dan manajer.</p></div></div><div className="module-list">{['Laporan produksi harian','Rekap bahan baku','Analitik laba & kapasitas'].map(x=><div className="module-list-row" key={x}><div className="row-icon"><Icon name="doc" size={16}/></div><div className="row-main"><strong>{x}</strong><span>PDF • Diperbarui barusan</span></div><button className="pill"><Icon name="download" size={13}/> Unduh</button></div>)}</div></div></div></>;
+}
+
+function SettingsModule(){
+  return <div className="module-grid two"><div className="card"><div className="module-card-title"><div><h3>Parameter operasional</h3><p>Nilai awal digunakan sebagai batasan solver harian.</p></div><button className="primary-btn">Simpan</button></div>{[['Modal bahan baku','Rp 750.000'],['Jam operasi oven','8 jam / hari'],['Jam operasi mixer','4 jam / hari'],['Tenaga kerja','16 jam / hari']].map(x=><div className="setting-row" key={x[0]}><div><strong>{x[0]}</strong><span>{x[1]}</span></div><button className="pill">Ubah</button></div>)}</div><div className="card"><div className="module-card-title"><div><h3>Preferensi notifikasi</h3><p>Atur kapan sistem memberi pengingat.</p></div></div>{['Deadline pesanan mendekat','Stok bahan di bawah minimum','Solver selesai menghitung'].map((x,i)=><div className="setting-row" key={x}><div><strong>{x}</strong><span>{i===0?'2 jam sebelum deadline':'Notifikasi di dashboard'}</span></div><button className="toggle on"><i/></button></div>)}</div></div>;
+}
+
+function HelpModule(){
+  return <><div className="module-grid two"><div className="card"><div className="module-card-title"><div><h3>Alur kerja TEFA</h3><p>Ikuti urutan ini untuk hasil rekomendasi yang konsisten.</p></div></div><div className="module-list">{[['01','Masukkan pesanan','Pesanan khusus otomatis menjadi Dmin.'],['02','Cek bahan baku','Pastikan stok cukup untuk resep produk.'],['03','Jalankan optimasi','Solver memilih kombinasi laba maksimum.'],['04','Jadwalkan produksi','Bagi beban mesin dan SDM sesuai deadline.']].map(x=><div className="module-list-row" key={x[0]}><div className="row-icon">{x[0]}</div><div className="row-main"><strong>{x[1]}</strong><span>{x[2]}</span></div></div>)}</div></div><div className="card"><div className="module-card-title"><div><h3>Panduan membaca hasil</h3><p>Istilah penting dalam dashboard.</p></div></div>{[['Optimal','Semua kendala modal, mesin, SDM, dan pesanan terpenuhi.'],['Infeasible','Batasan tidak dapat dipenuhi; tambah kapasitas atau turunkan Dmin.'],['Utilisasi','Persentase kapasitas yang terpakai untuk rencana produksi.']].map(x=><div className="help-card" style={{marginBottom:10}} key={x[0]}><div><b>{x[0]}</b><p>{x[1]}</p></div></div>)}</div></div><div className="card"><div className="module-card-title"><div><h3>Butuh bantuan lebih lanjut?</h3><p>Hubungi pengelola sistem TEFA untuk koreksi data master atau parameter.</p></div><button className="primary-btn"><Icon name="mail" size={14}/> Hubungi admin</button></div></div></>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
