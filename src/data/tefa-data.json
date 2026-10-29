@@ -38,14 +38,20 @@
     }
   ],
   "materials": [
-    { "id": "RM001", "name": "Tepung Terigu", "unit": "kg", "stock": 50 },
-    { "id": "RM002", "name": "Telur Ayam", "unit": "kg", "stock": 20 },
-    { "id": "RM003", "name": "Mentega / Butter", "unit": "kg", "stock": 10 },
-    { "id": "RM004", "name": "Gula Pasir", "unit": "kg", "stock": 15 },
-    { "id": "RM005", "name": "Ragi (Yeast)", "unit": "gr", "stock": 500 }
+    { "id": "RM001", "name": "Tepung Terigu", "unit": "kg", "stock": 50, "price": 12000, "minStock": 10, "shelfDays": 180 },
+    { "id": "RM002", "name": "Telur Ayam", "unit": "kg", "stock": 20, "price": 26000, "minStock": 5, "shelfDays": 14 },
+    { "id": "RM003", "name": "Mentega / Butter", "unit": "kg", "stock": 10, "price": 35000, "minStock": 3, "shelfDays": 60 },
+    { "id": "RM004", "name": "Gula Pasir", "unit": "kg", "stock": 15, "price": 16000, "minStock": 5, "shelfDays": 365 },
+    { "id": "RM005", "name": "Ragi (Yeast)", "unit": "gr", "stock": 500, "price": 200, "minStock": 100, "shelfDays": 90 }
+  ],
+  "stockLogs": [
+    { "id": "LOG-001", "date": "2026-10-14", "materialId": "RM001", "type": "Masuk", "qty": 25, "note": "Pembelian supplier — restock mingguan" },
+    { "id": "LOG-002", "date": "2026-10-15", "materialId": "RM002", "type": "Keluar", "qty": 2.5, "note": "Pemakaian produksi harian" },
+    { "id": "LOG-003", "date": "2026-10-16", "materialId": "RM003", "type": "Masuk", "qty": 5, "note": "Pembelian mentega curah" },
+    { "id": "LOG-004", "date": "2026-10-17", "materialId": "RM001", "type": "Keluar", "qty": 8.4, "note": "Pemakaian produksi 3 varian" }
   ],
   "defaults": { "modal": 750000, "ovenJam": 8, "mixerJam": 4, "sdmJam": 16, "orderMin": 150 },
-  "labaKemarin": 452000,
+  "labaKemarin": 452000,  
   "daily": [
     { "label": "Sen", "title": "Senin, 12 Okt 2026", "laba": 285000, "pendapatan": 712000 },
     { "label": "Sel", "title": "Selasa, 13 Okt 2026", "laba": 312000, "pendapatan": 795000 },

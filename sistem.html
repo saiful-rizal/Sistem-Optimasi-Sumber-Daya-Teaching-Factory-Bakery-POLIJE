@@ -304,12 +304,18 @@ const PRODUCTS = [
   {id:'PRD03',name:'Roti Kering (Bagelan)',price:12000,hpp:7000,margin:5000,oven:3,mixer:1.5,sdm:2,dmax:100,
    bom:{RM001:0.15,RM002:0.01,RM003:0.03,RM004:0.03,RM005:0.3}},
 ];
-const MATERIALS = [
-  {id:'RM001',name:'Tepung Terigu',unit:'kg',stock:50},
-  {id:'RM002',name:'Telur Ayam',unit:'kg',stock:20},
-  {id:'RM003',name:'Mentega / Butter',unit:'kg',stock:10},
-  {id:'RM004',name:'Gula Pasir',unit:'kg',stock:15},
-  {id:'RM005',name:'Ragi (Yeast)',unit:'gr',stock:500},
+const MATERIALS_DEFAULT = [
+  {id:'RM001',name:'Tepung Terigu',unit:'kg',stock:50,price:12000,minStock:10,shelfDays:180},
+  {id:'RM002',name:'Telur Ayam',unit:'kg',stock:20,price:26000,minStock:5,shelfDays:14},
+  {id:'RM003',name:'Mentega / Butter',unit:'kg',stock:10,price:35000,minStock:3,shelfDays:60},
+  {id:'RM004',name:'Gula Pasir',unit:'kg',stock:15,price:16000,minStock:5,shelfDays:365},
+  {id:'RM005',name:'Ragi (Yeast)',unit:'gr',stock:500,price:200,minStock:100,shelfDays:90},
+];
+const STOCK_LOGS_DEFAULT = [
+  {id:'LOG-001',date:'2026-10-14',materialId:'RM001',type:'Masuk',qty:25,note:'Pembelian supplier — restock mingguan'},
+  {id:'LOG-002',date:'2026-10-15',materialId:'RM002',type:'Keluar',qty:2.5,note:'Pemakaian produksi harian'},
+  {id:'LOG-003',date:'2026-10-16',materialId:'RM003',type:'Masuk',qty:5,note:'Pembelian mentega curah'},
+  {id:'LOG-004',date:'2026-10-17',materialId:'RM001',type:'Keluar',qty:8.4,note:'Pemakaian produksi 3 varian'},
 ];
 const DEFAULTS = {modal:750000, ovenJam:8, mixerJam:4, sdmJam:16, orderMin:150};
 const LABA_KEMARIN = 452000;
@@ -335,46 +341,90 @@ const ORDERS = [
   {id:'ORD-005',act:'Snack Box Kampus',emoji:'🧺',tint:'#E7F6EE',sub:'Pesanan Khusus • Instansi',deadline:'16 Okt, 10:00 WIB',qty:120,status:'Selesai',st:'done'},
 ];
 
-/* ================= SOLVER MILP (mendukung pesanan khusus X1 >= Dmin) ================= */
-function solveMILP(p){
-  const [A,B,C] = PRODUCTS;
+/* ============ SOLVER MILP SADAR-STOK (PDF: modal + alat + SDM + stok + Dmin/Dmax) ============ */
+function maxByStock(stockMap, bom, dmax){
+  let cap = dmax;
+  Object.keys(bom||{}).forEach(mid=>{
+    const need = bom[mid]||0;
+    if(need>0) cap = Math.min(cap, Math.floor((stockMap[mid]||0)/need));
+  });
+  return Math.max(0, cap);
+}
+function solveMILP(p, materials, products){
+  materials = materials || MATERIALS_DEFAULT;
+  products = products || PRODUCTS;
+  const [A,B,C] = products;
+  const stockMap = {};
+  materials.forEach(m=>{ stockMap[m.id]=m.stock; });
   const modal=p.modal, oven=p.ovenJam*60, mixer=p.mixerJam*60, sdm=p.sdmJam*60;
   const caps = {modal,oven,mixer,sdm};
   const usage={}, remain={};
-  MATERIALS.forEach(m=>{usage[m.id]=0; remain[m.id]=m.stock;});
-  const zero = {status:'Infeasible',x1:0,x2:0,x3:0,profit:0,revenue:0,
-                used:{modal:0,oven:0,mixer:0,sdm:0},usage,remain,caps};
-  const capA = Math.min(A.dmax, Math.floor(oven/A.oven), Math.floor(mixer/A.mixer), Math.floor(sdm/A.sdm));
-  if(p.orderMin > capA) return zero;                 // pesanan khusus tidak feasible
+  materials.forEach(m=>{usage[m.id]=0; remain[m.id]=m.stock;});
+  const zero = (reason)=>({status:'Infeasible',reason,x1:0,x2:0,x3:0,profit:0,revenue:0,
+    used:{modal:0,oven:0,mixer:0,sdm:0},usage,remain,caps,bottleneck:'-',bottleneckPct:0,stockConstrained:false,coverage:{}});
+  const capA = Math.min(A.dmax, Math.floor(oven/A.oven), Math.floor(mixer/A.mixer), Math.floor(sdm/A.sdm), maxByStock(stockMap, A.bom, A.dmax));
+  if(p.orderMin > capA){
+    let cause = 'Kapasitas/modal tidak cukup untuk pesanan khusus (Dmin).';
+    if(p.orderMin > maxByStock(stockMap, A.bom, 1e9)) cause = 'Stok gudang tidak cukup untuk pesanan khusus (Dmin). Tambah stok di Gudang.';
+    return zero(cause);
+  }
   let best = null;
   for(let x1=p.orderMin; x1<=capA; x1++){
     const rm=modal-x1*A.hpp, ro=oven-x1*A.oven, rx=mixer-x1*A.mixer, rs=sdm-x1*A.sdm;
     if(rm<0||ro<0||rx<0||rs<0) break;
-    const capB = Math.min(B.dmax, Math.floor(rm/B.hpp), Math.floor(ro/B.oven),
-                          Math.floor(rx/B.mixer), Math.floor(rs/B.sdm));
+    const rem1 = {}; let ok1=true;
+    for(const m of materials){ rem1[m.id]=(stockMap[m.id]||0)-x1*(A.bom[m.id]||0); if(rem1[m.id]<-1e-9){ok1=false;break;} }
+    if(!ok1) break;
+    const capB = Math.min(B.dmax, maxByStock(rem1, B.bom, B.dmax), Math.floor(rm/B.hpp), Math.floor(ro/B.oven), Math.floor(rx/B.mixer), Math.floor(rs/B.sdm));
     for(let x2=0; x2<=capB; x2++){
       const m2 = rm - x2*B.hpp;
-      const x3 = Math.max(0, Math.min(C.dmax, Math.floor(m2/C.hpp),
-        Math.floor((ro-x2*B.oven)/C.oven), Math.floor((rx-x2*B.mixer)/C.mixer),
-        Math.floor((rs-x2*B.sdm)/C.sdm)));
+      const ro2 = ro - x2*B.oven, rx2 = rx - x2*B.mixer, rs2 = rs - x2*B.sdm;
+      const rem2 = {};
+      for(const m of materials) rem2[m.id]=rem1[m.id]-x2*(B.bom[m.id]||0);
+      const x3 = Math.max(0, Math.min(C.dmax, maxByStock(rem2, C.bom, C.dmax),
+        Math.floor(m2/C.hpp), Math.floor(ro2/C.oven), Math.floor(rx2/C.mixer), Math.floor(rs2/C.sdm)));
       const profit = x1*A.margin + x2*B.margin + x3*C.margin;
       if(!best || profit>best.profit) best = {x1,x2,x3,profit};
     }
   }
-  if(!best) return zero;
+  if(!best) return zero('Tidak ada kombinasi feasible.');
   const xs=[best.x1,best.x2,best.x3];
   const used = {
-    modal: xs.reduce((s,x,i)=>s+x*PRODUCTS[i].hpp,0),
-    oven:  xs.reduce((s,x,i)=>s+x*PRODUCTS[i].oven,0),
-    mixer: xs.reduce((s,x,i)=>s+x*PRODUCTS[i].mixer,0),
-    sdm:   xs.reduce((s,x,i)=>s+x*PRODUCTS[i].sdm,0),
+    modal: xs.reduce((s,x,i)=>s+x*products[i].hpp,0),
+    oven:  xs.reduce((s,x,i)=>s+x*products[i].oven,0),
+    mixer: xs.reduce((s,x,i)=>s+x*products[i].mixer,0),
+    sdm:   xs.reduce((s,x,i)=>s+x*products[i].sdm,0),
   };
-  MATERIALS.forEach(m=>{
-    usage[m.id]  = xs.reduce((s,x,i)=>s + x*(PRODUCTS[i].bom[m.id]||0),0);
-    remain[m.id] = m.stock - usage[m.id];
+  materials.forEach(m=>{
+    usage[m.id]  = xs.reduce((s,x,i)=>s + x*(products[i].bom[m.id]||0),0);
+    remain[m.id] = (stockMap[m.id]||0) - usage[m.id];
   });
+  const utils = [
+    {k:'Modal', v: used.modal/caps.modal},
+    {k:'Oven', v: used.oven/caps.oven},
+    {k:'Mixer', v: used.mixer/caps.mixer},
+    {k:'SDM', v: used.sdm/caps.sdm},
+  ];
+  materials.forEach(m=>{ const awal=stockMap[m.id]||0; if(awal>0) utils.push({k:m.name, v: usage[m.id]/awal}); });
+  utils.sort((a,b)=>b.v-a.v);
+  const coverage = predictCoverage(materials, usage, remain);
+  const stockConstrained = materials.some(m=>remain[m.id] < (m.minStock||0));
   return {status:'Optimal',x1:best.x1,x2:best.x2,x3:best.x3,profit:best.profit,
-          revenue: xs.reduce((s,x,i)=>s+x*PRODUCTS[i].price,0), used,usage,remain,caps};
+          revenue: xs.reduce((s,x,i)=>s+x*products[i].price,0), used,usage,remain,caps,
+          bottleneck: utils[0]?utils[0].k:'-', bottleneckPct: utils[0]?Math.round(utils[0].v*100):0, stockConstrained, coverage};
+}
+function predictCoverage(materials, usage, remain){
+  const out = {};
+  materials.forEach(m=>{
+    const need = usage[m.id]||0;
+    const left = Math.max(0, remain[m.id]!=null?remain[m.id]:m.stock);
+    const days = need>1e-9 ? left/need : 99;
+    const capped = Math.min(99, days);
+    const suggest7 = Math.max(0, need*7 - left);
+    const status = left<=0 ? 'Habis' : left < (m.minStock||0) ? 'Kritis' : (need>0 && capped<3) ? 'Menipis' : left < (m.minStock||0)*2 ? 'Waspada' : 'Aman';
+    out[m.id] = { need, left, days: capped, daysLabel: need>1e-9 ? (capped>=99?'99+':capped.toFixed(1).replace('.',',')) : '—', suggest7, status };
+  });
+  return out;
 }
 
 /* ================= UTIL ================= */
@@ -487,10 +537,25 @@ function ChartCard({data,mode,setMode}){
 function App(){
   const [page,setPage]   = useState('Dashboard');
   const [params,setParams] = useState(DEFAULTS);
+  const [materials,setMaterials] = useState(MATERIALS_DEFAULT);
+  const [logs,setLogs] = useState(STOCK_LOGS_DEFAULT);
   const [mode,setMode]   = useState('harian');
-  const res   = useMemo(()=>solveMILP(params),[params]);
+  const res   = useMemo(()=>solveMILP(params, materials, PRODUCTS),[params, materials]);
+  const coverage = res.coverage || predictCoverage(materials, res.usage||{}, res.remain||{});
+  const lowStockCount = materials.filter(m=>{const c=coverage[m.id]; return c&&(c.status==='Kritis'||c.status==='Habis');}).length;
+  const stockValue = materials.reduce((s,m)=>s+(m.stock||0)*(m.price||0),0);
   const set   = k => e => setParams(p=>({...p,[k]:+e.target.value}));
-  const reset = () => setParams(DEFAULTS);
+  const reset = () => { setParams(DEFAULTS); setMaterials(MATERIALS_DEFAULT); setLogs(STOCK_LOGS_DEFAULT); };
+  const addStockLog = ({materialId, type, qty, note}) => {
+    const q = Number(qty);
+    if(!materialId || !(q>0)){ alert('Pilih bahan dan isi jumlah > 0'); return false; }
+    const mat = materials.find(m=>m.id===materialId);
+    if(type==='Keluar' && (mat.stock - q) < -1e-9){ alert('Stok tidak cukup!'); return false; }
+    const delta = type==='Masuk' ? q : -q;
+    setMaterials(prev=>prev.map(m=>m.id===materialId?{...m, stock: Math.max(0, Math.round((m.stock+delta)*100)/100)}:m));
+    setLogs(prev=>[{id:'LOG-'+String(Date.now()).slice(-6), date: new Date().toISOString().slice(0,10), materialId, type, qty: q, note: note||(type==='Masuk'?'Pembelian / restock':'Pemakaian produksi')}, ...prev].slice(0,100));
+    return true;
+  };
   const goParams = () => { setPage('Dashboard'); setTimeout(()=>{
     const el=document.getElementById('parameter'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
   },60); };
@@ -560,7 +625,7 @@ function App(){
         </header>
 
         {page!=='Dashboard' ? (
-          <ModulePage page={page} res={res} setPage={setPage}/>
+          <ModulePage page={page} res={res} setPage={setPage} materials={materials} logs={logs} coverage={coverage} stockValue={stockValue} onAddLog={addStockLog} setMaterials={setMaterials} setLogs={setLogs}/>
         ) : (
         <>
           {/* ---- Page head ---- */}
@@ -603,11 +668,11 @@ function App(){
               <div className="stat-top">
                 <div className="stat-ico"><Icon name="box" size={19}/></div>
                 <div><div className="stat-title">Rekomendasi Produksi</div>
-                     <div className="stat-sub">Total unit optimal • 3 varian</div></div>
+                     <div className="stat-sub">Total unit optimal • Bottleneck: {res.bottleneck||'-'}</div></div>
                 <button className="dots-btn"><Icon name="dotsV" size={16}/></button>
               </div>
-              <div className="stat-val">{totalUnit.toLocaleString('id-ID')} <small>unit</small><span className="badge">▲ 4,7%</span></div>
-              <div className="stat-foot"><span>Analisis Performa</span>
+              <div className="stat-val">{totalUnit.toLocaleString('id-ID')} <small>unit</small><span className="badge">{lowStockCount>0?lowStockCount+' kritis':'Stok aman'}</span></div>
+              <div className="stat-foot" onClick={()=>setPage('Bahan Baku')}><span>Nilai gudang {rp(stockValue)}</span>
                 <span className="foot-arrow"><Icon name="arrowR" size={13}/></span></div>
             </div>
           </section>
@@ -617,7 +682,7 @@ function App(){
             <div className="card">
               <div className="card-head">
                 <div><h3>Rekomendasi Produksi</h3>
-                     <div className="sub">Kombinasi optimal X₁, X₂, X₃ • Mixed-Integer Linear Programming</div></div>
+                     <div className="sub">Kombinasi optimal X₁, X₂, X₃ • MILP sadar-stok gudang</div></div>
                 <div className="right">
                   <span className={'chip-status '+(res.status==='Optimal'?'ok':'err')}>
                     <span className="dot"></span>Solver: {res.status}</span>
@@ -640,11 +705,41 @@ function App(){
                   </div>
                 ))}
               </div>
+              {res.stockConstrained && res.status==='Optimal' &&
+                <div className="infeasible" style={{background:'var(--amber-soft)',color:'var(--amber)'}}>Stok membatasi optimasi — bottleneck: {res.bottleneck} ({res.bottleneckPct}%). Tambah stok di Gudang.</div>}
               {res.status!=='Optimal' &&
-                <div className="infeasible">⚠ Batasan tidak dapat dipenuhi — turunkan pesanan khusus (Dmin) atau tambah modal/kapasitas.</div>}
+                <div className="infeasible">⚠ {res.reason||'Batasan tidak dapat dipenuhi — turunkan pesanan khusus (Dmin) atau tambah modal/kapasitas/stok.'}</div>}
             </div>
             <ChartCard data={chartData} mode={mode} setMode={setMode}/>
           </section>
+
+          <div className="card" style={{marginTop:16}}>
+            <div className="card-head">
+              <div><h3>Prediksi Stok Gudang — berbasis data aktual</h3>
+                   <div className="sub">Daya tahan = sisa / kebutuhan harian rencana optimal • Saran beli 7 hari</div></div>
+              <div className="right">
+                <span className={'chip-status '+(lowStockCount>0?'warn':'ok')}><span className="dot"></span>{lowStockCount>0?lowStockCount+' perlu restock':'Semua aman'}</span>
+                <button className="pill" onClick={()=>setPage('Bahan Baku')}>Buka Gudang</button>
+              </div>
+            </div>
+            <div className="data-table-wrap"><table className="data-table">
+              <thead><tr><th>Bahan</th><th>Sisa</th><th>Butuh/hari</th><th>Daya tahan</th><th>Status</th><th>Saran beli (7 hr)</th></tr></thead>
+              <tbody>
+                {materials.map(m=>{
+                  const c = coverage[m.id]||{need:0,left:m.stock,daysLabel:'—',suggest7:0,status:'Aman'};
+                  return <tr key={m.id}>
+                    <td><b>{m.name}</b></td>
+                    <td><b>{fmtQty(c.left)} {m.unit}</b></td>
+                    <td>{fmtQty(c.need)} {m.unit}</td>
+                    <td><b>{c.daysLabel}</b> hari</td>
+                    <td><span className={'st '+(c.status==='Aman'?'done':c.status==='Waspada'?'process':'wait')}><span className="dot"></span>{c.status}</span></td>
+                    <td>{c.suggest7>0.05?<b>{fmtQty(Math.ceil(c.suggest7*10)/10)} {m.unit}</b>:'—'}</td>
+                  </tr>;
+                })}
+              </tbody>
+            </table></div>
+            <div className="formula"><b>Logika prediksi:</b> solver memakai kendala stok <b>Σ aij·Xi ≤ stok gudang</b> (sesuai PDF). Setiap pencatatan Gudang langsung mengubah prediksi di dashboard ini.</div>
+          </div>
 
           {/* ---- Parameter + Efisiensi ---- */}
           <section className="row param" id="parameter">
@@ -665,9 +760,9 @@ function App(){
                 ))}
               </div>
               <div className="formula">
-                <b>Fungsi Objektif:</b> Max Z = 2.000·X₁ + 6.000·X₂ + 5.000·X₃<br/>
-                <b>Kendala:</b> 3.000·X₁+9.000·X₂+7.000·X₃ ≤ Modal &nbsp;•&nbsp; 2X₁+5X₂+3X₃ ≤ Oven &nbsp;•&nbsp;
-                1X₁+3X₂+2X₃ ≤ SDM &nbsp;•&nbsp; Dmin ≤ Xi ≤ Dmax &nbsp;•&nbsp; Xi ∈ ℤ⁺
+                <b>Fungsi Objektif (PDF):</b> Max Z = 2.000·X₁ + 6.000·X₂ + 5.000·X₃<br/>
+                <b>Kendala:</b> 3.000·X₁+9.000·X₂+7.000·X₃ ≤ Modal • 2X₁+5X₂+3X₃ ≤ Oven •
+                1X₁+3X₂+2X₃ ≤ SDM • Σ aij·Xi ≤ stok gudang • Dmin ≤ Xi ≤ Dmax • Xi ∈ ℤ⁺
               </div>
             </div>
             <div className="card">
