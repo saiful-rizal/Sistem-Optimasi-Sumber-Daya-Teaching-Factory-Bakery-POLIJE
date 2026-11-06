@@ -86,7 +86,7 @@ export default function ModulePage(props) {
       {page === "Barang Masuk" && <BarangMasukModule materials={materials} logs={logs} plan={plan} onAddLog={onAddLog} />}
       {page === "Riwayat Mutasi" && <RiwayatMutasiModule logs={logs} materials={materials} />}
       {page === "Laporan Produksi" && <LaporanProduksiModule approved={approved} realisasi={realisasi} products={products} />}
-      {page === "Stok Barang Jadi" && <StokJadiModule stokJadi={stokJadi} products={products} sales={sales} waste={waste} onSale={onSale} onDiscard={onDiscard} canFinance={canFinance} />}
+      {page === "Stok Barang Jadi" && <StokJadiModule stokJadi={stokJadi} products={products} sales={sales} waste={waste} onSale={onSale} onDiscard={onDiscard} canFinance={canFinance} roleId={roleId} />}
       {page === "Frekuensi Produksi" && <FrekuensiModule stokJadi={stokJadi} products={products} params={params} setParam={setParam} />}
       {page === "Hak Akses" && <HakAksesModule audit={audit} />}
       {page === "Optimasi" && <OptimasiModule res={res} go={go} materials={materials} coverage={coverage} />}

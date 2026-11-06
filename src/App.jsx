@@ -553,6 +553,20 @@ export default function App() {
             stokJadi={stokJadi} approved={approved} materials={materials} coverage={coverage} orders={orders} requests={requests}
             realisasi={realisasi} go={navigate} onAddLog={addStockLog} onAddOrder={addOrder}
           />
+        ) : page === "Dashboard" && roleId === "kasir" ? (
+          <Dashboard
+            params={params} set={set} reset={reset} goParams={goParams} goGudang={goGudang}
+            res={res} coverage={coverage} materials={materials} orders={orders}
+            lowStockCount={lowStockCount} stockValue={stockValue} chartData={chartData}
+            mode={mode} setMode={setMode} tiles={tiles} SLIDERS={SLIDERS}
+            barRow={barRow} totalUnit={totalUnit} deltaStr={deltaStr} modalPct={modalPct}
+            onAddLog={addStockLog} onAddOrder={addOrder}
+            canResetData={can(roleId, "settings.manage")}
+            canManageSettings={can(roleId, "plan.simulate")}
+            plan={plan} approved={approved} go={navigate} roleId={roleId}
+            kasirView={true}
+            sales={sales} stokJadi={stokJadi} products={products} onSale={recordSale}
+          />
         ) : page !== "Dashboard" ? (
           <ModulePage
             page={page}

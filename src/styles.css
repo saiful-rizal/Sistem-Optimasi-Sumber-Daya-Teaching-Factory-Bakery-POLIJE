@@ -352,3 +352,29 @@ tbody tr:last-child td{border-bottom:none}
 .pcard-rec{margin-top:12px;padding:10px 12px;background:#F4F7FA;border-radius:12px;font-size:13px}.pcard-rec small{display:block;color:var(--muted);font-size:11.5px;margin-top:3px;line-height:1.5}
 
 .chk{display:flex;gap:8px;align-items:center;font-size:12.5px;font-weight:600;margin-top:12px}.chk input{width:auto}
+
+/* ---------- Kasir: tampilan front office yang lebih bersih ---------- */
+.kasir-page{animation: fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.kasir-tile{border:2px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:.2s;background:#fff}
+.kasir-tile:hover{border-color:var(--green);transform:translateY(-2px);box-shadow:0 10px 24px rgba(16,24,40,.08)}
+.kasir-tile .tile-top{flex-direction:row;justify-content:space-between;align-items:center}
+.kasir-tile .tile-val{font-size:32px}
+.kasir-tile button.primary-btn{width:100%;padding:11px;font-size:13px;margin-top:4px}
+.kasir-stat{grid-template-columns:repeat(3,1fr)!important}
+@media (max-width:900px){.kasir-stat{grid-template-columns:1fr!important}}
+
+/* ---------- Umum: rapikan kartu dan spacing ---------- */
+.card{transition:box-shadow .2s,border-color .2s}
+.card:hover{border-color:#DCE3ED;box-shadow:0 8px 20px rgba(16,24,40,.06)}
+.page-head{margin-bottom:10px}
+.module-card-title{margin-bottom:12px}
+.pcard{animation: slideUp .35s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ---------- Badge & status lebih jelas ---------- */
+.chip-status{font-size:10.5px;padding:3px 10px}
+.nav-badge{font-size:10px;padding:2px 8px}
+
+/* ---------- Login: akun demo lebih rapi ---------- */
+.login-demo .pill{font-size:12px;padding:9px 12px}

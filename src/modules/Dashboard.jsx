@@ -8,6 +8,8 @@ import { rp, fmtQty } from "../lib/format.js";
 import { stockStatusClass } from "../lib/solver.js";
 import { can } from "../lib/roles.js";
 
+const statusOf = (c) => (c.expiredQty > 0 ? ["err", "Ada yang kedaluwarsa"] : c.soon > 0 ? ["warn", "Segera jual"] : c.fresh > 0 ? ["ok", "Aman"] : ["warn", "Stok kosong"]);
+
 export default function Dashboard({
   params,
   set,
@@ -37,7 +39,135 @@ export default function Dashboard({
   approved,
   go,
   roleId,
+  kasirView = false,
+  sales = [],
+  stokJadi = {},
+  products = [],
+  onSale,
 }) {
+  // ---------- Kasir dashboard: sederhana, fokus penjualan ----------
+  if (kasirView) {
+    const today = new Date().toISOString().slice(0, 10);
+    const todaySales = (sales || []).filter((s) => s.date === today);
+    const todaySold = todaySales.reduce((s, x) => s + x.qty, 0);
+    const todayRevenue = todaySales.reduce((s, x) => {
+      const p = products.find((pr) => pr.id === x.productId);
+      return s + x.qty * (p ? p.price : 0);
+    }, 0);
+    const lowStock = materials.filter((m) => {
+      const c = coverage[m.id];
+      return c && (c.status === "Kritis" || c.status === "Habis");
+    });
+
+    return (
+      <>
+        <div className="page-head">
+          <div>
+            <h1>Penjualan Hari Ini</h1>
+            <div className="sub">Catat penjualan roti, lihat stok siap jual, dan kelola pesanan pelanggan.</div>
+          </div>
+          <div className="head-actions">
+            <span className="chip-status ok"><span className="dot"></span>{todaySold} pcs terjual</span>
+            <span className="chip-status ok"><span className="dot"></span>Rp {todayRevenue.toLocaleString("id-ID")}</span>
+          </div>
+        </div>
+
+        <section className="stat-grid">
+          <div className="card stat">
+            <div className="stat-top">
+              <div className="stat-ico"><Icon name="bread" size={19} /></div>
+              <div>
+                <div className="stat-title">Stok Siap Jual</div>
+                <div className="stat-sub">Total roti yang bisa dijual sekarang</div>
+              </div>
+              <button className="dots-btn"><Icon name="dotsV" size={16} /></button>
+            </div>
+            <div className="stat-val">{Object.values(stokJadi || {}).reduce((s, c) => s + (c.fresh || 0), 0)}<small> pcs</small></div>
+            <div className="stat-foot" onClick={() => go("Stok Barang Jadi")}><span>Lihat detail stok <Icon name="arrowR" size={13} /></span></div>
+          </div>
+          <div className="card stat">
+            <div className="stat-top">
+              <div className="stat-ico"><Icon name="receipt" size={19} /></div>
+              <div>
+                <div className="stat-title">Pesanan Aktif</div>
+                <div className="stat-sub">Pesanan pelanggan yang belum selesai</div>
+              </div>
+              <button className="dots-btn"><Icon name="dotsV" size={16} /></button>
+            </div>
+            <div className="stat-val">{orders.filter((o) => o.status !== "Selesai").length}<small> pesanan</small></div>
+            <div className="stat-foot" onClick={() => go("Pesanan")}><span>Kelola pesanan <Icon name="arrowR" size={13} /></span></div>
+          </div>
+          <div className="card stat">
+            <div className="stat-top">
+              <div className="stat-ico"><Icon name="box" size={19} /></div>
+              <div>
+                <div className="stat-title">Bahan Baku</div>
+                <div className="stat-sub">Lihat ketersediaan bahan di gudang</div>
+              </div>
+              <button className="dots-btn"><Icon name="dotsV" size={16} /></button>
+            </div>
+            <div className="stat-val">{lowStock.length > 0 ? `${lowStock.length} kritis` : "Aman"}<small> bahan</small></div>
+            <div className="stat-foot" onClick={() => go("Bahan Baku")}><span>Lihat bahan baku <Icon name="arrowR" size={13} /></span></div>
+          </div>
+        </section>
+
+        <AlurKerja roleId="kasir" go={go} />
+
+        <section className="row reco">
+          <div className="card">
+            <div className="card-head">
+              <div>
+                <h3>Roti Siap Jual</h3>
+                <div className="sub">Pilih produk dan catat jumlah yang terjual.</div>
+              </div>
+            </div>
+            <div className="tile-grid">
+              {(products || []).map((p) => {
+                const c = (stokJadi || {})[p.id];
+                const fresh = c ? c.fresh : 0;
+                const [cls, text] = statusOf(c || { expiredQty: 0, soon: 0, fresh: 0, shelf: 0 });
+                return (
+                  <div className="card tile" key={p.id}>
+                    <div className="tile-top">
+                      <div className="tile-ico" style={{ background: p.tint }}><Icon name="bread" size={16} /></div>
+                      <div className="tile-name">{p.name}</div>
+                    </div>
+                    <div className="tile-val">{fresh}<small> pcs</small></div>
+                    <div className="tile-sub">{text}</div>
+                    <span className={"tile-status " + cls}>{text}</span>
+                    <div style={{ marginTop: 12 }}>
+                      <label style={{ display: "block", fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Jumlah terjual (pcs)</label>
+                      <button className="primary-btn" style={{ width: "100%", marginTop: 8 }} onClick={() => {
+                        const qty = window.prompt(`Masukkan jumlah terjual untuk ${p.name} (pcs):`, "");
+                        if (qty && Number(qty) > 0) {
+                          onSale({ productId: p.id, qty: Number(qty) });
+                        }
+                      }}><Icon name="check" size={14} /> Catat Penjualan</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card-head">
+            <div>
+              <h3>Riwayat Penjualan Terbaru</h3>
+            </div>
+          </div>
+          <div className="data-table-wrap"><table className="data-table" style={{ minWidth: 0 }}>
+            <thead><tr><th>Tanggal</th><th>Produk</th><th>Terjual</th><th>Dicatat oleh</th></tr></thead>
+            <tbody>{sales.length === 0 && <tr><td colSpan={4} style={{ textAlign: "center", color: "var(--faint)" }}>Belum ada penjualan.</td></tr>}
+              {sales.slice(0, 10).map((s) => (<tr key={s.id}><td>{s.date}</td><td>{(products.find((pr) => pr.id === s.productId) || {}).name}</td><td><b>{s.qty} pcs</b></td><td>{s.by}</td></tr>))}
+            </tbody>
+          </table></div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <div className="page-head">

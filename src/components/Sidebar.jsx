@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Icon from "./Icon.jsx";
 
 // Struktur menu: grup yang bisa dibuka-tutup (dropdown), submenu menjorok.
+// Grup dipisah antara Produksi (pelaksanaan) dan Pemasaran (penjualan/pesanan).
 const MENU = [
   { id: "Dashboard", icon: "grid" },
   {
@@ -28,10 +29,14 @@ const MENU = [
     key: "produksi", label: "Produksi", icon: "bread",
     items: [
       { id: "Rencana Produksi", icon: "layers" },
-      { id: "Stok Barang Jadi", icon: "bread" },
       { id: "Penjadwalan", icon: "layers" },
+      { id: "Stok Barang Jadi", icon: "bread" },
+    ],
+  },
+  {
+    key: "pemasaran", label: "Pemasaran", icon: "receipt",
+    items: [
       { id: "Pesanan", icon: "receipt" },
-      { id: "Master Data", label: "Produk & Resep", icon: "doc" },
     ],
   },
   {
@@ -49,12 +54,21 @@ const MENU = [
     ],
   },
 ];
+
+// Halaman pendek untuk Kasir (front office) — tidak menampilkan grup penuh.
+const KASIR_MENU = [
+  { id: "Dashboard", icon: "grid" },
+  { id: "Stok Barang Jadi", icon: "bread" },
+  { id: "Pesanan", icon: "receipt" },
+  { id: "Bahan Baku", icon: "box" },
+];
 const BOTTOM = [
   { id: "Bantuan", icon: "help" },
   { id: "Keluar", icon: "logout" },
 ];
 
 export default function Sidebar({ page, setPage, goParams, lowStockCount, allowedPages, role, badges = {} }) {
+  const isKasir = role.id === "kasir";
   const groupOfPage = (p) => (MENU.find((g) => g.items && g.items.some((i) => i.id === p)) || {}).key;
   const [open, setOpen] = useState(() => ({ [groupOfPage(page)]: true }));
   const [q, setQ] = useState("");
@@ -95,31 +109,38 @@ export default function Sidebar({ page, setPage, goParams, lowStockCount, allowe
       </div>
 
       <div className="nav-tree">
-        {MENU.map((g) => {
-          if (!g.items) return allowedPages.includes(g.id) && match(g) ? link(g) : null;
-          const items = g.items.filter((it) => allowedPages.includes(it.id) && match(it));
-          if (items.length === 0) return null;
-          const isOpen = term ? true : !!open[g.key];
-          const hasActive = items.some((i) => i.id === page);
-          const groupBadge = g.key === "bahan" && lowStockCount > 0 ? lowStockCount : null;
-          return (
-            <div key={g.key} className="nav-group">
-              <button
-                type="button"
-                className={"nav-group-toggle" + (hasActive ? " has-active" : "")}
-                aria-expanded={isOpen}
-                onClick={() => setOpen((o) => ({ ...o, [g.key]: !o[g.key] }))}
-              >
-                <span className="group-label"><Icon name={g.icon} size={16} />{g.label}</span>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  {groupBadge && <span className="nav-badge warn">{groupBadge}</span>}
-                  <span className={"chev" + (isOpen ? " open" : "")}><Icon name="chevD" size={14} /></span>
-                </span>
-              </button>
-              {isOpen && <div className="nav-submenu">{items.map((it) => link(it, true))}</div>}
-            </div>
-          );
-        })}
+        {isKasir ? (
+          // Kasir: daftar lurus tanpa grup, hanya halaman yang diperlukan
+          <div className="nav-group">
+            {KASIR_MENU.filter((it) => allowedPages.includes(it.id) && match(it)).map((it) => link(it, false))}
+          </div>
+        ) : (
+          MENU.map((g) => {
+            if (!g.items) return allowedPages.includes(g.id) && match(g) ? link(g) : null;
+            const items = g.items.filter((it) => allowedPages.includes(it.id) && match(it));
+            if (items.length === 0) return null;
+            const isOpen = term ? true : !!open[g.key];
+            const hasActive = items.some((i) => i.id === page);
+            const groupBadge = g.key === "bahan" && lowStockCount > 0 ? lowStockCount : null;
+            return (
+              <div key={g.key} className="nav-group">
+                <button
+                  type="button"
+                  className={"nav-group-toggle" + (hasActive ? " has-active" : "")}
+                  aria-expanded={isOpen}
+                  onClick={() => setOpen((o) => ({ ...o, [g.key]: !o[g.key] }))}
+                >
+                  <span className="group-label"><Icon name={g.icon} size={16} />{g.label}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {groupBadge && <span className="nav-badge warn">{groupBadge}</span>}
+                    <span className={"chev" + (isOpen ? " open" : "")}><Icon name="chevD" size={14} /></span>
+                  </span>
+                </button>
+                {isOpen && <div className="nav-submenu">{items.map((it) => link(it, true))}</div>}
+              </div>
+            );
+          })
+        )}
       </div>
 
       <div className="nav-bottom">{BOTTOM.filter((it) => allowedPages.includes(it.id) && match(it)).map((it) => link(it))}</div>

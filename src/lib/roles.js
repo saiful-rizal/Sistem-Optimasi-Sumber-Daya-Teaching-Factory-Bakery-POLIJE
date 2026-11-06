@@ -78,12 +78,12 @@ export const ROLES = {
     label: "Kasir",
     name: "Kasir",
     initials: "KR",
-    tagline: "Front office: mencatat penjualan harian, mencatat pesanan pelanggan, dan memantau stok siap jual.",
+    tagline: "Front office: catat penjualan harian, terima pesanan pelanggan, lihat stok roti siap jual.",
     pages: ["Dashboard", "Stok Barang Jadi", "Pesanan", "Bahan Baku", "Bantuan", "Keluar"],
     duties: [
-      "Mencatat penjualan harian roti dan stok barang jadi yang laku.",
-      "Mencatat pesanan pelanggan (rutin dan khusus).",
-      "Memantau stok barang jadi dan pemberitahuan roti kedaluwarsa.",
+      "Mencatat penjualan harian roti (jumlah terjual per produk).",
+      "Menerima dan mencatat pesanan pelanggan (rutin dan khusus).",
+      "Memantau stok roti siap jual dan pemberitahuan kedaluwarsa.",
       "Melihat ketersediaan bahan baku di gudang (hanya baca).",
     ],
     limits: [
