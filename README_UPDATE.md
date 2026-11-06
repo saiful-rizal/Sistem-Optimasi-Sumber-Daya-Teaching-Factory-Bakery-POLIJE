@@ -1,32 +1,178 @@
-# Pembaruan Sistem Tefa: Perencanaan Modal + Hak Akses
+# Sistem Manajemen & Optimasi Produksi Bakery TEFA (3 Role)
 
-Timpa folder `src/` proyek Anda dengan folder `src/` di zip ini, lalu jalankan `npm install && npm run dev`.
+Sistem terintegrasi untuk manajemen produksi roti dengan 3 role: **Admin Utama**, **Admin Produksi**, dan **Kasir**. Digunakan untuk menggantikan proses manual (Google Sheet, buku manual, aplikasi Play Store terpisah) menjadi satu platform terpadu.
 
-Akun demo (client-side, ganti dengan backend untuk produksi):
-- admin.utama / utama123
-- admin.produksi / produksi123
-- kasir / kasir123
+## 🔧 Instalasi
 
-## Alur sistem
-Admin Utama isi modal bulanan -> sistem hitung alokasi roti vs kering -> produksi per siklus (MILP bulat)
--> kebutuhan bahan baku & daftar belanja -> prediksi omzet & laba -> Admin Utama setujui rencana
--> Admin Produksi menerima perintah kerja harian, input realisasi (stok bahan otomatis berkurang)
--> kekurangan bahan diajukan -> Admin Utama setujui -> Admin Produksi catat penerimaan (stok bertambah).
+```bash
+npm install
+npm run dev
+```
 
-## File baru
-lib/planner.js, lib/roles.js (ditulis ulang), components/Login.jsx,
-modules/PerencanaanModule, RencanaProduksiModule, PengajuanModule, MasterDataModule, HakAksesModule, DashboardProduksi.
-## File diubah
-App.jsx, ModulePage, Sidebar, Topbar, Dashboard, GudangModule, QuickAdd, PeramalanModule, styles.css, data/tefa-data.json (modalBulanan).
+## 👥 Akun Demo (Client-side)
 
-## Pembaruan 2: sidebar dropdown & menu Bahan Baku
-- Sidebar berupa grup yang bisa dibuka-tutup (Perencanaan, Bahan Baku, Produksi, Laporan, Sistem), grup aktif terbuka otomatis, ada pencarian menu.
-- Bahan Baku dipecah: Stok Bahan Baku, Pengelolaan Bahan Baku (tambah/ubah/hapus), Barang Masuk, Distribusi Bahan, Pengajuan Bahan, Riwayat Mutasi.
-- Baru: Laporan Produksi, izin material.manage. Master Data berganti nama menjadi Produk & Resep.
+Ganti dengan autentikasi backend (Node.js + MongoDB) untuk produksi.
 
-## Pembaruan 3: stok barang jadi, masa simpan, frekuensi produksi
-- Stok Barang Jadi (Admin Utama & Produksi): catat penjualan, stok per batch (FIFO), roti kedaluwarsa, saran jumlah produksi berikutnya.
-- Frekuensi Produksi (Admin Utama): bandingkan rencana sekarang vs 2x vs 1x seminggu berdasarkan penjualan, masa simpan, dan biaya tetap per hari produksi.
-- Perencanaan Modal: opsi "Batasi produksi sesuai penjualan nyata".
-- Master Data: kolom masa simpan produk. Dashboard: panel alur kerja per peran.
-- Asumsi: roti sisa dijual lagi sampai masa simpan habis, lalu dibuang. Biaya tetap per hari produksi default Rp100.000 (perkiraan, ubah sesuai kondisi pabrik).
+| Username | Password | Role |
+|----------|----------|------|
+| admin.utama | utama123 | Admin Utama |
+| admin.produksi | produksi123 | Admin Produksi |
+| kasir | kasir123 | Kasir |
+
+---
+
+## 📋 3 Role & Akses
+
+### 1. Admin Utama (Pemilik/Manajer)
+- Mengatur modal bulanan & parameter kapasitas (oven, mixer, SDM)
+- Menyetujui rencana produksi bulanan (MILP)
+- Mengelola bahan baku (kategori Utama / Penunjang / Isian / Lain-lain)
+- Mengelola produk & resep (harga jual, HPP, BOM, berat adonan)
+- Melihat laporan keuangan, laba, dan log aktivitas semua pengguna
+- Reset data & pengaturan sistem
+
+**Sidebar:** Semua grup menu (Perencanaan, Bahan Baku, Produksi, Pemasaran, Laporan, Sistem)
+
+### 2. Admin Produksi (Pelaksana Lapangan)
+- Menerima perintah kerja harian dari rencana yang disetujui
+- Mencatat realisasi produksi per tahap (8 tahap proses)
+- Mencatat distribusi bahan baku & memantau stok kritis
+- Mengajukan & menerima pembelian bahan baku
+- Menambah & memperbarui pesanan pelanggan
+- Melacak kapasitas produksi harian
+
+**Sidebar:** Grup Produksi (Rencana, Penjadwalan, Stok Jadi, Proses Produksi) & Pemasaran (Pesanan)
+
+### 3. Kasir (Front Office / POS)
+- Mencatat penjualan harian per produk (tombol besar, mudah disentuh)
+- Menerima pesanan pelanggan dengan pembayaran QRIS / Transfer / Tunai
+- Memilih metode pencatatan: Google Sheet / Manual / Aplikasi Play Store
+- Memantau stok roti siap jual & pemberitahuan kedaluwarsa
+
+**Sidebar:** Menu lintang hanya 4 halaman (Dashboard, Stok Barang Jadi, Pesanan, Bahan Baku)
+
+---
+
+## 🍞 Katalog Produk & Harga
+
+| Produk | Harga Jual | Berat Adonan | Masa Simpan |
+|--------|-----------|--------------|-------------|
+| Roti Manis | Rp 5.000 | 50 g | 3 hari |
+| Roti Tawar | Rp 12.000 | 250 g | 4 hari |
+| Roti Kering 100g | Rp 10.000 | 100 g | 14 hari |
+| Roti Kering 180g | Rp 15.000 | 180 g | 14 hari |
+| Roti Kering Toples | Rp 25.000 | 250 g | 21 hari |
+
+---
+
+## 📦 Bahan Baku (4 Kategori)
+
+**Utama (60%)**: Tepung Terigu, Air, Ragi, Garam  
+**Penunjang (20%)**: Margarin, Gula Pasir, Telur Ayam, Bread Improver  
+**Isian (10%)**: Coklat, Mesis, Kacang, Susu  
+**Lain-lain (10%)**: Bahan Lain-lain
+
+---
+
+## 🔄 8 Tahap Proses Produksi
+
+| No | Tahap | Durasi | Keterangan |
+|----|-------|--------|------------|
+| P1 | Penimbangan | 10 mnt | Timbang bahan baku sesuai resep |
+| P2 | Pencampuran | 30 mnt | Campur hingga adonan kalis |
+| P3 | Tempering | 15 mnt | Istirahatkan adonan sebelum dicetak |
+| P4 | Molding | 20 mnt | Bentuk per resep 5 kg, isian sesuai variasi |
+| P5 | Proving | Dinamis | Fermentasi sebelum dipanggang |
+| P6 | Pengovenan | 20 mnt | Panggang dalam oven |
+| P7 | Pendinginan | 15 mnt | Dinginkan sebelum dikemas |
+| P8 | Packing | 10 mnt | Kemas dalam toples/plastik |
+
+---
+
+## ⚙️ Kapasitas Produksi Harian
+
+| Hari | Kapasitas | Fokus Produk |
+|------|-----------|--------------|
+| Senin & Kamis | 25 kg (Full) | Roti Manis & Roti Tawar |
+| Selasa & Jumat | 10–15 kg | Kue Kering |
+| Sabtu & Minggu | 10–15 kg | Semua produk |
+
+---
+
+## 💳 Metode Pembayaran & Pencatatan
+
+**Pembayaran:** QRIS, Transfer, Tunai  
+**Pencatatan:** Google Sheet, Manual, Aplikasi Play Store
+
+---
+
+## 🗄️ Database (MongoDB)
+
+Sistem dirancang untuk diimplementasikan dengan backend MongoDB. Koleksi utama:
+
+| Koleksi | Keterangan |
+|---------|------------|
+| `users` | Pengguna & RBAC (3 role) |
+| `roles` | Definisi hak akses per role |
+| `products` | Katalog produk & BOM (resep) |
+| `materials` | Bahan baku & stok (4 kategori) |
+| `stock_logs` | Riwayat mutasi stok |
+| `production_process` | Log 8 tahap produksi per batch |
+| `production_capacity` | Aturan kapasitas harian |
+| `orders` | Pesanan pelanggan (dengan pembayaran & pencatatan) |
+| `sales` | Transaksi penjualan POS kasir |
+| `waste_logs` | Roti kedaluwarsa / terbuang |
+| `purchase_requests` | Pengajuan pembelian bahan |
+| `production_plans` | Rencana bulanan (disetujui Admin Utama) |
+| `cost_categories` | Biaya operasional (overhead) |
+| `audit_logs` | Log aktivitas semua pengguna |
+| `daily_stats` | Statistik harian (cache dashboard) |
+
+---
+
+## 📁 File Baru & Diubah
+
+**Baru:**
+- `src/modules/ProductionProcessModule.jsx` — Pelacakan 8 tahap produksi
+- `src/data/tefa-data.json` — Diperluas: 5 produk, 13 bahan baku, proses produksi, kapasitas, pembayaran, pencatatan
+
+**Diubah:**
+- `src/lib/roles.js` — 3 role (utama, produksi, kasir), konfigurasi bisnis bakery, permission process.track
+- `src/lib/solver.js` — Solver MILP dinamis untuk 5 produk, ekspor konfigurasi bisnis
+- `src/components/Sidebar.jsx` — Grup Produksi & Pemasaran dipisah, menu Kasir disederhanakan
+- `src/components/QuickAdd.jsx` — Form pesanan dengan metode pembayaran & pencatatan
+- `src/components/OrdersCard.jsx` — Tabel pesanan dengan kolom Pembayaran & Pencatatan
+- `src/modules/Dashboard.jsx` — Dashboard Kasir (fokus penjualan, tanpa data keuangan)
+- `src/modules/StokJadiModule.jsx` — Tampilan Kasir (tombol besar, catat penjualan per produk)
+- `src/modules/ModulePage.jsx` — Memuat ProductionProcessModule & roleId ke StokJadiModule
+- `src/App.jsx` — Routing Dashboard Kasir, simpan paymentMethod & recordingMethod
+- `src/styles.css` — Gaya kasir (animasi, tombol besar, kartu hover)
+- `README_UPDATE.md` — Dokumentasi sistem lengkap
+
+---
+
+## 🚀 Cara Menjalankan
+
+```bash
+# Install dependencies
+npm install
+
+# Jalankan development server
+npm run dev
+
+# Build untuk produksi
+npm run build
+
+# Preview build
+npm run preview
+```
+
+Aplikasi akan berjalan di `http://localhost:5173` (default Vite).
+
+---
+
+## 📝 Catatan
+
+- Login saat ini bersifat **client-side (demo)**. Untuk produksi, sambungkan ke backend Node.js + MongoDB dengan autentikasi yang aman.
+- Semua data disimpan di `localStorage` browser saat ini.
+- UI dirancang sederhana dengan minimal interaksi: tombol besar untuk Kasir, navigasi jelas per role, dan validasi otomatis pada setiap tindakan.
