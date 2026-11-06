@@ -1,8 +1,18 @@
 // ============================================================
-// Hak akses (RBAC) — Admin Utama vs Admin Produksi vs Kasir
+// Hak akses (RBAC) & Konfigurasi Bisnis Bakery TEFA
+// Role: Admin Utama, Admin Produksi, Kasir
 // Catatan: login di bawah ini bersifat DEMO (client-side).
 // Untuk produksi nyata, pindahkan autentikasi & pengecekan izin ke backend.
 // ============================================================
+
+import staticData from "../data/tefa-data.json";
+
+export const PRODUCTION_PROCESS = staticData.productionProcess || [];
+export const CAPACITY_RULES = staticData.capacityRules || {};
+export const PAYMENT_METHODS = staticData.paymentMethods || ["QRIS", "Transfer", "Tunai"];
+export const RECORDING_METHODS = staticData.recordingMethods || ["Google Sheet", "Manual", "Aplikasi Play Store"];
+export const COST_CATEGORIES = staticData.costCategories || ["Pengemasan", "Gaji Karyawan", "Bahan Bakar (Gas/Solar)"];
+export const MATERIAL_MIX_RATIO = staticData.materialMixRatio || { utama: 60, penunjang: 20, isian: 10, lain: 10 };
 
 export const PERMISSIONS = [
   // Perencanaan & keuangan
@@ -13,9 +23,9 @@ export const PERMISSIONS = [
   { id: "optimasi.view", group: "Perencanaan", label: "Membuka halaman Optimasi (MILP) & Peramalan finansial", utama: true, produksi: false, kasir: false },
   // Produksi
   { id: "sales.record", group: "Produksi", label: "Mencatat penjualan, stok barang jadi, dan roti terbuang", utama: true, produksi: true, kasir: true },
-  { id: "production.report", group: "Produksi", label: "Input realisasi produksi harian", utama: true, produksi: true, kasir: false },
-  { id: "schedule.view", group: "Produksi", label: "Melihat jadwal produksi", utama: true, produksi: true, kasir: false },
-  { id: "order.create", group: "Produksi", label: "Menambah & memperbarui status pesanan", utama: true, produksi: true, kasir: true },
+  { id: "production.report", group: "Produksi", label: "Input realisasi produksi harian (proses produksi)", utama: true, produksi: true, kasir: false },
+  { id: "schedule.view", group: "Produksi", label: "Melihat jadwal produksi & kapasitas harian", utama: true, produksi: true, kasir: false },
+  { id: "order.create", group: "Produksi", label: "Menambah & memperbarui status pesanan (pembayaran QRIS/Transfer/Tunai)", utama: true, produksi: true, kasir: true },
   // Gudang
   { id: "stock.view", group: "Gudang", label: "Melihat stok & prediksi ketahanan bahan", utama: true, produksi: true, kasir: true },
   { id: "stock.out", group: "Gudang", label: "Mencatat distribusi bahan ke produksi (keluar)", utama: true, produksi: true, kasir: false },
@@ -25,11 +35,12 @@ export const PERMISSIONS = [
   { id: "request.approve", group: "Pembelian", label: "Menyetujui / menolak pengajuan pembelian", utama: true, produksi: false, kasir: false },
   { id: "request.receive", group: "Pembelian", label: "Mencatat penerimaan barang dari pengajuan yang disetujui", utama: true, produksi: true, kasir: false },
   // Administrasi
-  { id: "material.manage", group: "Gudang", label: "Mengelola data bahan baku (tambah, ubah, hapus bahan)", utama: true, produksi: false, kasir: false },
-  { id: "master.edit", group: "Administrasi", label: "Mengubah produk & resep (harga jual, HPP, BOM)", utama: true, produksi: false, kasir: false },
+  { id: "material.manage", group: "Gudang", label: "Mengelola data bahan baku (kategori utama/penunjang/isian/lain)", utama: true, produksi: false, kasir: false },
+  { id: "master.edit", group: "Administrasi", label: "Mengubah produk & resep (harga jual, HPP, BOM, berat adonan)", utama: true, produksi: false, kasir: false },
   { id: "report.finance", group: "Administrasi", label: "Laporan keuangan & analitik laba", utama: true, produksi: false, kasir: false },
   { id: "audit.view", group: "Administrasi", label: "Melihat log aktivitas (audit) & matriks hak akses", utama: true, produksi: false, kasir: false },
   { id: "settings.manage", group: "Administrasi", label: "Pengaturan sistem & reset data", utama: true, produksi: false, kasir: false },
+  { id: "process.track", group: "Produksi", label: "Melacak proses produksi (penimbangan, pencampuran, molding, oven, dll)", utama: true, produksi: true, kasir: false },
 ];
 
 export const ROLES = {
@@ -38,33 +49,34 @@ export const ROLES = {
     label: "Admin Utama",
     name: "Admin Utama",
     initials: "AU",
-    tagline: "Pemilik / manajer: mengatur modal, menyetujui rencana, mengontrol keuangan.",
-    pages: ["Dashboard", "Perencanaan Modal", "Optimasi", "Frekuensi Produksi", "Peramalan", "Bahan Baku", "Pengelolaan Bahan Baku", "Barang Masuk", "Distribusi Bahan", "Pengajuan Bahan", "Riwayat Mutasi", "Rencana Produksi", "Stok Barang Jadi", "Penjadwalan", "Pesanan", "Master Data", "Laporan", "Laporan Produksi", "Hak Akses", "Pengaturan", "Bantuan", "Keluar"],
+    tagline: "Pemilik / manajer: mengatur modal, menyetujui rencana, mengontrol keuangan, dan mengawasi produksi.",
+    pages: ["Dashboard", "Perencanaan Modal", "Optimasi", "Frekuensi Produksi", "Peramalan", "Bahan Baku", "Pengelolaan Bahan Baku", "Barang Masuk", "Distribusi Bahan", "Pengajuan Bahan", "Riwayat Mutasi", "Rencana Produksi", "Stok Barang Jadi", "Penjadwalan", "Pesanan", "Proses Produksi", "Master Data", "Laporan", "Laporan Produksi", "Hak Akses", "Pengaturan", "Bantuan", "Keluar"],
     duties: [
       "Menetapkan modal bulanan dan parameter kapasitas (oven, mixer, SDM).",
       "Menjalankan simulasi: modal → kebutuhan bahan baku → produksi → laba.",
       "Menyetujui dan menerbitkan rencana bulanan agar menjadi perintah kerja bagi Admin Produksi.",
       "Menyetujui atau menolak pengajuan pembelian bahan baku.",
-      "Mengelola data bahan baku (tambah, ubah, hapus) serta produk & resep (harga jual, HPP, BOM).",
+      "Mengelola data bahan baku (kategori utama, penunjang, isian, lain-lain) serta produk & resep (harga jual, HPP, BOM).",
       "Membandingkan produksi 1x vs 2x seminggu berdasarkan penjualan dan masa simpan roti.",
+      "Melacak proses produksi (penimbangan, pencampuran, tempering, molding, proving, oven, pendinginan, packing).",
       "Koreksi stok (opname), reset data, dan memantau log aktivitas semua pengguna.",
     ],
-    limits: ["Tidak ada pembatasan fungsi; semua tindakan tercatat di log aktivitas."],
+    limits: ["Semua tindakan tercatat di log aktivitas. Tidak dapat mencatat penjualan langsung di kasir (gunakan menu Kasir)."],
   },
   produksi: {
     id: "produksi",
     label: "Admin Produksi",
     name: "Admin Produksi",
     initials: "AP",
-    tagline: "Pelaksana lapangan: menjalankan rencana yang disetujui, mengelola bahan harian.",
-    pages: ["Dashboard", "Peramalan", "Bahan Baku", "Distribusi Bahan", "Pengajuan Bahan", "Riwayat Mutasi", "Rencana Produksi", "Stok Barang Jadi", "Penjadwalan", "Pesanan", "Laporan Produksi", "Bantuan", "Keluar"],
+    tagline: "Pelaksana lapangan: jalankan rencana produksi, catat proses, dan kelola bahan harian.",
+    pages: ["Dashboard", "Peramalan", "Bahan Baku", "Distribusi Bahan", "Pengajuan Bahan", "Riwayat Mutasi", "Rencana Produksi", "Stok Barang Jadi", "Penjadwalan", "Pesanan", "Proses Produksi", "Laporan Produksi", "Bantuan", "Keluar"],
     duties: [
       "Membaca perintah kerja harian dari rencana yang sudah disetujui Admin Utama.",
-      "Mencatat realisasi produksi (jumlah jadi, reject) — stok bahan berkurang otomatis sesuai resep.",
-      "Mencatat penjualan harian dan roti terbuang; sistem menyarankan jumlah produksi berikutnya.",
+      "Mencatat realisasi produksi per proses (penimbangan, pencampuran, tempering, molding, proving, oven, pendinginan, packing).",
       "Mencatat distribusi bahan baku ke produksi dan memantau stok kritis.",
       "Mengajukan pembelian bahan; mencatat penerimaan hanya untuk pengajuan yang sudah disetujui.",
-      "Menambah pesanan dan memperbarui status pesanan.",
+      "Menambah pesanan dan memperbarui status pesanan (pembayaran QRIS, Transfer, atau Tunai).",
+      "Melacak kapasitas produksi harian (25 kg Senin/Kamis, 10-15 kg hari lain).",
     ],
     limits: [
       "Tidak dapat melihat laba, margin, HPP, maupun modal bulanan.",
@@ -78,11 +90,12 @@ export const ROLES = {
     label: "Kasir",
     name: "Kasir",
     initials: "KR",
-    tagline: "Front office: catat penjualan harian, terima pesanan pelanggan, lihat stok roti siap jual.",
+    tagline: "Front office: catat penjualan harian, terima pesanan pelanggan (QRIS/Transfer/Tunai), lihat stok roti siap jual.",
     pages: ["Dashboard", "Stok Barang Jadi", "Pesanan", "Bahan Baku", "Bantuan", "Keluar"],
     duties: [
       "Mencatat penjualan harian roti (jumlah terjual per produk).",
-      "Menerima dan mencatat pesanan pelanggan (rutin dan khusus).",
+      "Menerima dan mencatat pesanan pelanggan dengan metode pembayaran QRIS, Transfer, atau Tunai.",
+      "Memilih metode pencatatan: Google Sheet, Manual, atau Aplikasi Play Store.",
       "Memantau stok roti siap jual dan pemberitahuan kedaluwarsa.",
       "Melihat ketersediaan bahan baku di gudang (hanya baca).",
     ],

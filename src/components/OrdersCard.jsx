@@ -70,8 +70,10 @@ export default function OrdersCard({ orders, materials, onAddLog, onAddOrder }) 
             <th style={{ width: 36 }}><input type="checkbox" className="cbx" checked={all} onChange={toggleAll} /></th>
             <th>Aktivitas</th>
             <th>Order ID</th>
-            <th>Deadline</th>
             <th>Jumlah</th>
+            <th>Pembayaran</th>
+            <th>Pencatatan</th>
+            <th>Deadline</th>
             <th>Status</th>
             <th style={{ width: 40 }}></th>
           </tr>
@@ -92,14 +94,16 @@ export default function OrdersCard({ orders, materials, onAddLog, onAddOrder }) 
                 </div>
               </td>
               <td style={{ fontWeight: 600 }}>{o.id}</td>
-              <td>{o.deadline}</td>
               <td style={{ fontWeight: 600 }}>{o.qty} unit</td>
+              <td><span className={"chip-status " + (o.paymentMethod === "QRIS" ? "ok" : o.paymentMethod === "Transfer" ? "process" : "wait")}><span className="dot"></span>{o.paymentMethod || "-"}</span></td>
+              <td>{o.recordingMethod || "-"}</td>
+              <td>{o.deadline}</td>
               <td><span className={"st " + o.st}><span className="dot"></span>{o.status}</span></td>
               <td>
                 <button
                   className="dots-btn"
                   aria-label={"Detail " + o.id}
-                  onClick={() => window.alert(o.id + " - " + o.act + "\nDeadline: " + o.deadline + "\nStatus: " + o.status)}
+                  onClick={() => window.alert(o.id + " - " + o.act + "\nJumlah: " + o.qty + " unit\nPembayaran: " + (o.paymentMethod || "-") + "\nPencatatan: " + (o.recordingMethod || "-") + "\nDeadline: " + o.deadline + "\nStatus: " + o.status)}
                 >
                   <Icon name="dots" size={16} />
                 </button>

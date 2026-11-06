@@ -223,7 +223,7 @@ export default function App() {
     notify(`Stok ${mat ? mat.name : materialId} diperbarui.`);
   };
 
-  const addOrder = ({ product, qty, kind, deadline, note }) => {
+  const addOrder = ({ product, qty, kind, deadline, note, paymentMethod = "Tunai", recordingMethod = "Manual" }) => {
     if (!guard("order.create")) return false;
     const jumlah = Number(qty);
     if (!product || !(jumlah > 0)) {
@@ -236,7 +236,7 @@ export default function App() {
     const id = "ORD-" + String(nextNum).padStart(3, "0") + "-" + String(Date.now()).slice(0 - 4);
     const baru = {
       id,
-      act: choice.name,
+      act: product,
       emoji: "",
       tint: choice.tint,
       sub: isKhusus ? "Pesanan Khusus" : "Produksi Rutin",
@@ -245,6 +245,8 @@ export default function App() {
       status: "Menunggu",
       st: "wait",
       note: note || "",
+      paymentMethod,
+      recordingMethod,
     };
     setOrders((prev) => [baru, ...prev].slice(0, 100));
     notify(`Pesanan ${choice.name} ${jumlah} unit tercatat.`);

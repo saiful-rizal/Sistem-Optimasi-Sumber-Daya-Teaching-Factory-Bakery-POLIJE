@@ -31,6 +31,7 @@ const MENU = [
       { id: "Rencana Produksi", icon: "layers" },
       { id: "Penjadwalan", icon: "layers" },
       { id: "Stok Barang Jadi", icon: "bread" },
+      { id: "Proses Produksi", icon: "target" },
     ],
   },
   {

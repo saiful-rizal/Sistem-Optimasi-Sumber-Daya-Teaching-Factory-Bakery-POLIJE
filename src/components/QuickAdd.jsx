@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import Icon from "./Icon.jsx";
 import { fmtQty } from "../lib/format.js";
 
-const PRODUCT_OPTIONS = ["Roti Manis", "Roti Tawar", "Roti Kering (Bagelan)", "Snack Box Kampus"];
+const PRODUCT_OPTIONS = ["Roti Manis", "Roti Tawar", "Roti Kering 100g", "Roti Kering 180g", "Roti Kering Toples"];
+const PAYMENT_OPTIONS = ["QRIS", "Transfer", "Tunai"];
+const RECORDING_OPTIONS = ["Google Sheet", "Manual", "Aplikasi Play Store"];
 
 function useEscape(onClose) {
   useEffect(() => {
@@ -39,13 +41,15 @@ function OrderForm({ onAddOrder, onDone }) {
   const [kind, setKind] = useState("Rutin");
   const [deadline, setDeadline] = useState("");
   const [note, setNote] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("Tunai");
+  const [recordingMethod, setRecordingMethod] = useState("Manual");
   return (
     <form
       className="gudang-form"
       style={{ padding: 20 }}
       onSubmit={(e) => {
         e.preventDefault();
-        if (onAddOrder({ product, qty, kind, deadline, note })) onDone();
+        if (onAddOrder({ product, qty, kind, deadline, note, paymentMethod, recordingMethod })) onDone();
       }}
     >
       <div>
@@ -69,6 +73,24 @@ function OrderForm({ onAddOrder, onDone }) {
           </select>
         </div>
       </div>
+      <div className="g-row2">
+        <div>
+          <label>Metode Pembayaran</label>
+          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+            {PAYMENT_OPTIONS.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label>Metode Pencatatan</label>
+          <select value={recordingMethod} onChange={(e) => setRecordingMethod(e.target.value)}>
+            {RECORDING_OPTIONS.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
+      </div>
       <div>
         <label>Deadline</label>
         <input placeholder="Contoh Besok jam 09 pagi" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
@@ -78,7 +100,7 @@ function OrderForm({ onAddOrder, onDone }) {
         <input placeholder="Contoh untuk acara kampus" value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
       <div className="modal-footer" style={{ margin: "4px -20px -20px", borderRadius: "0 0 18px 18px" }}>
-        <span>Pesanan baru masuk daftar Menunggu.</span>
+        <span>Pesanan baru masuk daftar Menunggu. Pembayaran: {paymentMethod} • Pencatatan: {recordingMethod}</span>
         <div style={{ display: "flex", gap: 8 }}>
           <button type="button" className="pill" onClick={onDone}>Batal</button>
           <button type="submit" className="primary-btn"><Icon name="check" size={14} /> Simpan Pesanan</button>

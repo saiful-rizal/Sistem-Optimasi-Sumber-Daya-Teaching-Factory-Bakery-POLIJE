@@ -8,6 +8,12 @@ export const DAILY = staticData.daily;
 export const WEEKLY = staticData.weekly;
 export const ORDERS = staticData.orders;
 export const STOCK_LOGS_DEFAULT = staticData.stockLogs || [];
+export const PRODUCTION_PROCESS = staticData.productionProcess || [];
+export const CAPACITY_RULES = staticData.capacityRules || {};
+export const PAYMENT_METHODS = staticData.paymentMethods || [];
+export const RECORDING_METHODS = staticData.recordingMethods || [];
+export const COST_CATEGORIES = staticData.costCategories || [];
+export const MATERIAL_MIX_RATIO = staticData.materialMixRatio || {};
 
 export function maxByStock(stockMap, bom, dmax) {
   let cap = dmax;
@@ -54,8 +60,8 @@ export function predictCoverage(materials, usage, remain) {
   return out;
 }
 
+// Solver MILP dinamis untuk N produk (menggunakan pendekatan iterasi terbatas)
 export function solveMILP(p, materials = MATERIALS_DEFAULT, products = PRODUCTS_DEFAULT) {
-  const [A, B, C] = products;
   const stockMap = {};
   materials.forEach((m) => {
     stockMap[m.id] = m.stock;
@@ -71,12 +77,11 @@ export function solveMILP(p, materials = MATERIALS_DEFAULT, products = PRODUCTS_
     usage[m.id] = 0;
     remain[m.id] = m.stock;
   });
+
   const zero = (reason) => ({
     status: "Infeasible",
     reason,
-    x1: 0,
-    x2: 0,
-    x3: 0,
+    x: products.map(() => 0),
     profit: 0,
     revenue: 0,
     used: { modal: 0, oven: 0, mixer: 0, sdm: 0 },
@@ -89,92 +94,92 @@ export function solveMILP(p, materials = MATERIALS_DEFAULT, products = PRODUCTS_
     coverage: {},
   });
 
-  const feasibleA = (x) => {
-    if (modal - x * A.hpp < -1e-9) return false;
-    if (oven - x * A.oven < -1e-9 || mixer - x * A.mixer < -1e-9 || sdm - x * A.sdm < -1e-9) return false;
-    for (const m of materials) {
-      const need = (A.bom[m.id] || 0) * x;
-      if (need - (stockMap[m.id] || 0) > 1e-9) return false;
-    }
-    return true;
-  };
+  // Hitung kapasitas per produk berdasarkan batasan
+  const productCaps = products.map((prod, i) => {
+    const capByModal = Math.floor(modal / (prod.hpp || 1));
+    const capByOven = Math.floor(oven / (prod.oven || 1));
+    const capByMixer = Math.floor(mixer / (prod.mixer || 1));
+    const capBySdm = Math.floor(sdm / (prod.sdm || 1));
+    const capByStock = maxByStock(stockMap, prod.bom, prod.dmax || 1e9);
+    return Math.min(prod.dmax || 1e9, capByModal, capByOven, capByMixer, capBySdm, capByStock);
+  });
 
-  const capA = Math.min(
-    A.dmax,
-    Math.floor(oven / A.oven),
-    Math.floor(mixer / A.mixer),
-    Math.floor(sdm / A.sdm),
-    maxByStock(stockMap, A.bom, A.dmax)
-  );
-
-  if (p.orderMin > capA) {
+  // Pesanan minimum pada produk pertama (Roti Manis)
+  const orderMin = p.orderMin || 0;
+  if (orderMin > productCaps[0]) {
     let cause = "Kapasitas atau modal belum cukup untuk pesanan khusus minimum.";
-    const byStockOnly = maxByStock(stockMap, A.bom, 1e9);
-    if (p.orderMin > byStockOnly)
-      cause = "Stok gudang belum cukup untuk pesanan khusus minimum. Tambah stok lalu catat pembelian di menu Gudang.";
     return zero(cause);
   }
-  if (!feasibleA(p.orderMin)) return zero("Pesanan minimum melebihi batas stok atau kapasitas.");
 
+  // Cari kombinasi optimal dengan iterasi terbatas (untuk performa)
   let best = null;
-  for (let x1 = p.orderMin; x1 <= capA; x1++) {
-    const rm = modal - x1 * A.hpp;
-    const ro = oven - x1 * A.oven;
-    const rx = mixer - x1 * A.mixer;
-    const rs = sdm - x1 * A.sdm;
-    if (rm < 0 || ro < 0 || rx < 0 || rs < 0) break;
+  const maxIter = 2000;
+  let iter = 0;
+
+  // Untuk performa, batasi iterasi produk pertama
+  const x1Start = orderMin;
+  const x1End = Math.min(productCaps[0], x1Start + 100);
+
+  for (let x1 = x1Start; x1 <= x1End && iter < maxIter; x1++) {
+    iter++;
+    const remModal = modal - x1 * (products[0]?.hpp || 0);
+    const remOven = oven - x1 * (products[0]?.oven || 0);
+    const remMixer = mixer - x1 * (products[0]?.mixer || 0);
+    const remSdm = sdm - x1 * (products[0]?.sdm || 0);
+    if (remModal < 0 || remOven < 0 || remMixer < 0 || remSdm < 0) break;
+
     const rem1 = {};
     let ok1 = true;
     for (const m of materials) {
-      rem1[m.id] = (stockMap[m.id] || 0) - x1 * (A.bom[m.id] || 0);
-      if (rem1[m.id] < -1e-9) {
-        ok1 = false;
-        break;
-      }
+      rem1[m.id] = (stockMap[m.id] || 0) - x1 * ((products[0]?.bom || {})[m.id] || 0);
+      if (rem1[m.id] < -1e-9) { ok1 = false; break; }
     }
     if (!ok1) break;
-    const capBstock = maxByStock(rem1, B.bom, B.dmax);
-    const capB = Math.min(
-      B.dmax,
-      capBstock,
-      Math.floor(rm / B.hpp),
-      Math.floor(ro / B.oven),
-      Math.floor(rx / B.mixer),
-      Math.floor(rs / B.sdm)
-    );
-    for (let x2 = 0; x2 <= capB; x2++) {
-      const m2 = rm - x2 * B.hpp;
-      const ro2 = ro - x2 * B.oven;
-      const rx2 = rx - x2 * B.mixer;
-      const rs2 = rs - x2 * B.sdm;
-      const rem2 = {};
-      for (const m of materials) rem2[m.id] = rem1[m.id] - x2 * (B.bom[m.id] || 0);
-      const x3 = Math.max(
-        0,
-        Math.min(
-          C.dmax,
-          maxByStock(rem2, C.bom, C.dmax),
-          Math.floor(m2 / C.hpp),
-          Math.floor(ro2 / C.oven),
-          Math.floor(rx2 / C.mixer),
-          Math.floor(rs2 / C.sdm)
-        )
-      );
-      const profit = x1 * A.margin + x2 * B.margin + x3 * C.margin;
-      if (!best || profit > best.profit) best = { x1, x2, x3, profit };
+
+    // Untuk produk ke-2 dan seterusnya, gunakan greedy berdasarkan margin per unit terbatas
+    const xs = [x1];
+    let curModal = remModal;
+    let curOven = remOven;
+    let curMixer = remMixer;
+    let curSdm = remSdm;
+    const curRem = { ...rem1 };
+
+    for (let i = 1; i < products.length; i++) {
+      const prod = products[i];
+      const capByModal = Math.floor(curModal / (prod.hpp || 1));
+      const capByOven = Math.floor(curOven / (prod.oven || 1));
+      const capByMixer = Math.floor(curMixer / (prod.mixer || 1));
+      const capBySdm = Math.floor(curSdm / (prod.sdm || 1));
+      const capByStock = maxByStock(curRem, prod.bom, prod.dmax || 1e9);
+      const xi = Math.min(prod.dmax || 1e9, capByModal, capByOven, capByMixer, capBySdm, capByStock, 100); // batasi 100 untuk performa
+      xs.push(xi);
+
+      curModal -= xi * (prod.hpp || 0);
+      curOven -= xi * (prod.oven || 0);
+      curMixer -= xi * (prod.mixer || 0);
+      curSdm -= xi * (prod.sdm || 0);
+      for (const m of materials) {
+        curRem[m.id] -= xi * ((prod.bom || {})[m.id] || 0);
+      }
+    }
+
+    const profit = xs.reduce((s, x, i) => s + x * (products[i]?.margin || 0), 0);
+    if (!best || profit > best.profit) {
+      best = { x: xs, profit };
     }
   }
+
   if (!best) return zero("Belum ada kombinasi yang memenuhi semua batas.");
 
-  const xs = [best.x1, best.x2, best.x3];
+  const xs = best.x;
   const used = {
-    modal: xs.reduce((s, x, i) => s + x * products[i].hpp, 0),
-    oven: xs.reduce((s, x, i) => s + x * products[i].oven, 0),
-    mixer: xs.reduce((s, x, i) => s + x * products[i].mixer, 0),
-    sdm: xs.reduce((s, x, i) => s + x * products[i].sdm, 0),
+    modal: xs.reduce((s, x, i) => s + x * (products[i]?.hpp || 0), 0),
+    oven: xs.reduce((s, x, i) => s + x * (products[i]?.oven || 0), 0),
+    mixer: xs.reduce((s, x, i) => s + x * (products[i]?.mixer || 0), 0),
+    sdm: xs.reduce((s, x, i) => s + x * (products[i]?.sdm || 0), 0),
   };
   materials.forEach((m) => {
-    usage[m.id] = xs.reduce((s, x, i) => s + x * (products[i].bom[m.id] || 0), 0);
+    usage[m.id] = xs.reduce((s, x, i) => s + x * ((products[i]?.bom || {})[m.id] || 0), 0);
     remain[m.id] = (stockMap[m.id] || 0) - usage[m.id];
   });
 
@@ -190,17 +195,17 @@ export function solveMILP(p, materials = MATERIALS_DEFAULT, products = PRODUCTS_
   });
   utils.sort((a, b) => b.v - a.v);
   const coverage = predictCoverage(materials, usage, remain);
-  const stockConstrained =
-    materials.some((m) => remain[m.id] < (m.minStock || 0)) ||
-    (utils[0] && materials.some((m) => m.name === utils[0].k));
+  const stockConstrained = materials.some((m) => remain[m.id] < (m.minStock || 0));
 
+  // Backward-compat: ekspos x1, x2, x3 untuk kode lama
   return {
     status: "Optimal",
-    x1: best.x1,
-    x2: best.x2,
-    x3: best.x3,
+    x1: xs[0] || 0,
+    x2: xs[1] || 0,
+    x3: xs[2] || 0,
+    x: xs,
     profit: best.profit,
-    revenue: xs.reduce((s, x, i) => s + x * products[i].price, 0),
+    revenue: xs.reduce((s, x, i) => s + x * (products[i]?.price || 0), 0),
     used,
     usage,
     remain,

@@ -20,6 +20,7 @@ import RiwayatMutasiModule from "./RiwayatMutasiModule.jsx";
 import LaporanProduksiModule from "./LaporanProduksiModule.jsx";
 import StokJadiModule from "./StokJadiModule.jsx";
 import FrekuensiModule from "./FrekuensiModule.jsx";
+import ProductionProcessModule from "./ProductionProcessModule.jsx";
 import { can } from "../lib/roles.js";
 
 const TITLES = {
@@ -87,6 +88,7 @@ export default function ModulePage(props) {
       {page === "Riwayat Mutasi" && <RiwayatMutasiModule logs={logs} materials={materials} />}
       {page === "Laporan Produksi" && <LaporanProduksiModule approved={approved} realisasi={realisasi} products={products} />}
       {page === "Stok Barang Jadi" && <StokJadiModule stokJadi={stokJadi} products={products} sales={sales} waste={waste} onSale={onSale} onDiscard={onDiscard} canFinance={canFinance} roleId={roleId} />}
+      {page === "Proses Produksi" && <ProductionProcessModule approved={approved} products={products} materials={materials} realisasi={realisasi} onReport={onReport} go={go} />}
       {page === "Frekuensi Produksi" && <FrekuensiModule stokJadi={stokJadi} products={products} params={params} setParam={setParam} />}
       {page === "Hak Akses" && <HakAksesModule audit={audit} />}
       {page === "Optimasi" && <OptimasiModule res={res} go={go} materials={materials} coverage={coverage} />}
