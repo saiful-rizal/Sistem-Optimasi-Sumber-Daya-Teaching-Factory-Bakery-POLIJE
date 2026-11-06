@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Icon from "../components/Icon.jsx";
+import ModalForm from "../components/ModalForm.jsx";
 import { PRODUCTION_PROCESS, CAPACITY_RULES } from "../lib/roles.js";
 import { fmtQty } from "../lib/format.js";
 
@@ -17,27 +18,37 @@ export default function ProductionProcessModule({ approved, products, materials,
     } catch { return []; }
   });
 
+  const [openProc, setOpenProc] = useState(false);
+  const [procStep, setProcStep] = useState(null);
+  const [procQty, setProcQty] = useState("");
+  const [procNotes, setProcNotes] = useState("");
+
   const saveLogs = (next) => {
     setProcessLogs(next);
     try { localStorage.setItem("tefa-process-logs", JSON.stringify(next)); } catch {}
   };
 
-  const totalDuration = PRODUCTION_PROCESS.reduce((s, p) => s + p.durationMin, 0);
-
-  const addProcessLog = (processId, notes, qty) => {
+  const addProcessLog = () => {
+    const step = PRODUCTION_PROCESS.find((p) => p.id === procStep);
     const entry = {
       id: "PROC" + Date.now(),
       date: today,
       day: dayName,
-      processId,
-      processName: PRODUCTION_PROCESS.find((p) => p.id === processId)?.name || processId,
-      durationMin: PRODUCTION_PROCESS.find((p) => p.id === processId)?.durationMin || 0,
-      qty: Number(qty) || 0,
-      notes: notes || "-",
+      processId: procStep,
+      processName: step?.name || procStep,
+      durationMin: step?.durationMin || 0,
+      qty: Number(procQty) || 0,
+      notes: procNotes || "-",
       by: "Admin Produksi",
     };
     saveLogs([entry, ...processLogs].slice(0, 200));
+    setOpenProc(false);
+    setProcStep(null);
+    setProcQty("");
+    setProcNotes("");
   };
+
+  const totalDuration = PRODUCTION_PROCESS.reduce((s, p) => s + p.durationMin, 0);
 
   const todayLogs = processLogs.filter((l) => l.date === today);
 
@@ -82,22 +93,24 @@ export default function ProductionProcessModule({ approved, products, materials,
                 <div className="right"><span className={"chip-status " + (doneToday ? "ok" : "wait")}><span className="dot"></span>{doneToday ? "Selesai" : "Belum"}</span></div>
               </div>
               <div style={{ padding: 12 }}>
-                <form className="gudang-form" onSubmit={(e) => {
-                  e.preventDefault();
-                  const qtyEl = e.target.elements[0];
-                  const notesEl = e.target.elements[1];
-                  addProcessLog(step.id, notesEl.value, qtyEl.value);
-                  e.target.reset();
-                }} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div><label style={{ fontSize: 11.5, fontWeight: 600 }}>Jumlah (kg)</label><input type="number" min="0" step="0.1" placeholder="0" required /></div>
-                  <div><label style={{ fontSize: 11.5, fontWeight: 600 }}>Catatan</label><input type="text" placeholder="mis. adonan siap, tanpa kendala" /></div>
-                  <button className="primary-btn" style={{ width: "100%", justifyContent: "center" }}><Icon name="check" size={14} /> Catat {step.name}</button>
-                </form>
+                <button className="primary-btn" style={{ width: "100%", justifyContent: "center" }} onClick={() => { setProcStep(step.id); setOpenProc(true); }}><Icon name="check" size={14} /> Catat {step.name}</button>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Modal catat proses */}
+      {openProc && procStep && (
+        <ModalForm title={`Catat ${PRODUCTION_PROCESS.find((p) => p.id === procStep)?.name}`} desc="Isi jumlah dan catatan untuk tahap produksi ini." onClose={() => setOpenProc(false)} icon="target">
+          <form className="gudang-form" onSubmit={(e) => { e.preventDefault(); addProcessLog(); }}>
+            <div><label>Tahapan</label><select value={procStep} onChange={(e) => setProcStep(e.target.value)} disabled>{PRODUCTION_PROCESS.map((p) => <option key={p.id} value={p.id}>{p.order}. {p.name} ({p.durationMin} mnt)</option>)}</select></div>
+            <div><label>Jumlah (kg)</label><input type="number" min="0" step="0.1" value={procQty} onChange={(e) => setProcQty(e.target.value)} required placeholder="0" /></div>
+            <div><label>Catatan</label><input type="text" value={procNotes} onChange={(e) => setProcNotes(e.target.value)} placeholder="mis. adonan siap, tanpa kendala" /></div>
+            <button className="primary-btn" style={{ width: "100%", justifyContent: "center" }}><Icon name="check" size={14} /> Simpan Catatan</button>
+          </form>
+        </ModalForm>
+      )}
 
       {/* Rencana produksi yang disetujui */}
       {snap && (

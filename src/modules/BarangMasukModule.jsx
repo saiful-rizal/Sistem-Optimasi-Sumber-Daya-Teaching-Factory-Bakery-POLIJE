@@ -1,23 +1,31 @@
 import React, { useState } from "react";
+import Icon from "../components/Icon.jsx";
 import { rp, fmtQty } from "../lib/format.js";
+import ModalForm from "../components/ModalForm.jsx";
 
 export default function BarangMasukModule({ materials, logs, plan, onAddLog }) {
+  const [openMasuk, setOpenMasuk] = useState(false);
   const [f, setF] = useState({ materialId: materials[0] ? materials[0].id : "", qty: "", note: "" });
   const mat = (id) => materials.find((m) => m.id === id) || { name: id, unit: "" };
   const masuk = logs.filter((l) => l.type === "Masuk");
   const saran = (plan && plan.shopping ? plan.shopping : []).filter((s) => s.buy > 0);
-  const submit = (e) => { e.preventDefault(); if (onAddLog({ materialId: f.materialId, type: "Masuk", qty: f.qty, note: f.note })) setF({ ...f, qty: "", note: "" }); };
+  const submitMasuk = (e) => { e.preventDefault(); if (onAddLog({ materialId: f.materialId, type: "Masuk", qty: f.qty, note: f.note })) { setF({ ...f, qty: "", note: "" }); setOpenMasuk(false); } };
   return (
     <>
       <div className="module-grid two">
         <div className="card">
           <div className="module-card-title"><div><h3>Catat barang masuk</h3><p>Pembelian, retur, atau penerimaan bahan. Stok bertambah otomatis.</p></div></div>
-          <form className="gudang-form" onSubmit={submit}>
-            <div><label>Bahan</label><select value={f.materialId} onChange={(e) => setF({ ...f, materialId: e.target.value })}>{materials.map((m) => <option key={m.id} value={m.id}>{m.name} — sisa {fmtQty(m.stock)} {m.unit}</option>)}</select></div>
-            <div><label>Jumlah ({mat(f.materialId).unit})</label><input type="number" min="0" step="0.1" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} required /></div>
-            <div><label>Keterangan / supplier</label><input value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="Contoh beli ke Toko Makmur" /></div>
-            <button className="primary-btn" style={{ justifyContent: "center" }}>Simpan barang masuk</button>
-          </form>
+          <button className="primary-btn" style={{ width: "100%", justifyContent: "center" }} onClick={() => { setF({ materialId: materials[0] ? materials[0].id : "", qty: "", note: "" }); setOpenMasuk(true); }}><Icon name="in" size={14} /> Catat Barang Masuk</button>
+          {openMasuk && (
+            <ModalForm title="Catat Barang Masuk" desc="Pilih bahan, jumlah, dan keterangan. Stok akan bertambah otomatis." onClose={() => { setOpenMasuk(false); setF({ materialId: materials[0] ? materials[0].id : "", qty: "", note: "" }); }} icon="in">
+              <form className="gudang-form" onSubmit={submitMasuk}>
+                <div><label>Bahan</label><select value={f.materialId} onChange={(e) => setF({ ...f, materialId: e.target.value })}>{materials.map((m) => <option key={m.id} value={m.id}>{m.name} — sisa {fmtQty(m.stock)} {m.unit}</option>)}</select></div>
+                <div><label>Jumlah ({mat(f.materialId).unit})</label><input type="number" min="0" step="0.1" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} required /></div>
+                <div><label>Keterangan / supplier</label><input value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="Contoh beli ke Toko Makmur" /></div>
+                <button className="primary-btn" style={{ width: "100%", justifyContent: "center" }}><Icon name="check" size={14} /> Simpan Barang Masuk</button>
+              </form>
+            </ModalForm>
+          )}
         </div>
         <div className="card">
           <div className="module-card-title"><div><h3>Saran dari rencana bulanan</h3><p>Kekurangan bahan menurut Perencanaan Modal. Klik untuk mengisi formulir.</p></div></div>
@@ -25,7 +33,7 @@ export default function BarangMasukModule({ materials, logs, plan, onAddLog }) {
             <div className="module-list">{saran.map((s) => (
               <div className="module-list-row" key={s.id}>
                 <div className="row-main"><strong>{s.name}: {fmtQty(s.buy)} {s.unit}</strong><span>{rp(s.cost)} • {s.freq}</span></div>
-                <button className="pill" onClick={() => setF({ materialId: s.id, qty: String(s.buy), note: "Sesuai rencana bulanan" })}>Isi</button>
+                <button className="pill" onClick={() => { setF({ materialId: s.id, qty: String(s.buy), note: "Sesuai rencana bulanan" }); setOpenMasuk(true); }}>Isi</button>
               </div>))}</div>
           )}
         </div>

@@ -1,11 +1,14 @@
 import React, { useState } from "react";
+import Icon from "../components/Icon.jsx";
 import { rp, fmtQty } from "../lib/format.js";
+import ModalForm from "../components/ModalForm.jsx";
 
 export default function PengajuanModule({ requests, materials, canApprove, canReceive, canFinance, onCreate, onDecide, onReceive }) {
+  const [openAdd, setOpenAdd] = useState(false);
   const [f, setF] = useState({ materialId: materials[0]?.id || "", qty: "", reason: "" });
   const mat = (id) => materials.find((m) => m.id === id) || { name: id, unit: "", price: 0 };
   const st = { Menunggu: "warn", Disetujui: "ok", Diterima: "ok", Ditolak: "err" };
-  const submit = (e) => { e.preventDefault(); if (onCreate(f)) setF({ ...f, qty: "", reason: "" }); };
+  const submitAdd = (e) => { e.preventDefault(); if (onCreate(f)) { setF({ materialId: materials[0]?.id || "", qty: "", reason: "" }); setOpenAdd(false); } };
   const count = (s) => requests.filter((r) => r.status === s).length;
   return (
     <>
@@ -15,12 +18,17 @@ export default function PengajuanModule({ requests, materials, canApprove, canRe
       <div className="module-grid two">
         <div className="card">
           <div className="module-card-title"><div><h3>Ajukan pembelian bahan</h3><p>Pengajuan diperiksa Admin Utama sebelum belanja.</p></div></div>
-          <form className="gudang-form" onSubmit={submit}>
-            <div><label>Bahan</label><select value={f.materialId} onChange={(e) => setF({ ...f, materialId: e.target.value })}>{materials.map((m) => <option key={m.id} value={m.id}>{m.name} — sisa {fmtQty(m.stock)} {m.unit}</option>)}</select></div>
-            <div><label>Jumlah ({mat(f.materialId).unit})</label><input type="number" min="0" step="0.1" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} required /></div>
-            <div><label>Alasan</label><input value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} placeholder="Contoh stok tinggal untuk 2 hari" /></div>
-            <button className="primary-btn" style={{ justifyContent: "center" }}>Kirim pengajuan</button>
-          </form>
+          <button className="primary-btn" style={{ width: "100%", justifyContent: "center" }} onClick={() => { setF({ materialId: materials[0]?.id || "", qty: "", reason: "" }); setOpenAdd(true); }}><Icon name="plus" size={14} /> Ajukan Pembelian</button>
+          {openAdd && (
+            <ModalForm title="Ajukan Pembelian Bahan" desc="Pilih bahan, jumlah, dan alasan pengajuan. Admin Utama akan menyetujui atau menolak." onClose={() => { setOpenAdd(false); setF({ materialId: materials[0]?.id || "", qty: "", reason: "" }); }} icon="receipt">
+              <form className="gudang-form" onSubmit={submitAdd}>
+                <div><label>Bahan</label><select value={f.materialId} onChange={(e) => setF({ ...f, materialId: e.target.value })}>{materials.map((m) => <option key={m.id} value={m.id}>{m.name} — sisa {fmtQty(m.stock)} {m.unit}</option>)}</select></div>
+                <div><label>Jumlah ({mat(f.materialId).unit})</label><input type="number" min="0" step="0.1" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} required /></div>
+                <div><label>Alasan</label><input value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} placeholder="Contoh stok tinggal untuk 2 hari" /></div>
+                <button className="primary-btn" style={{ width: "100%", justifyContent: "center" }}><Icon name="check" size={14} /> Kirim Pengajuan</button>
+              </form>
+            </ModalForm>
+          )}
         </div>
         <div className="card">
           <div className="module-card-title"><div><h3>Alur persetujuan</h3></div></div>

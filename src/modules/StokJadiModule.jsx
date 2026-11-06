@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Icon from "../components/Icon.jsx";
+import ModalForm from "../components/ModalForm.jsx";
 import { rp } from "../lib/format.js";
 
 const statusOf = (c) => (c.expiredQty > 0 ? ["err", "Ada yang kedaluwarsa"] : c.soon > 0 ? ["warn", "Segera jual"] : c.fresh > 0 ? ["ok", "Aman"] : ["warn", "Stok kosong"]);
@@ -7,10 +8,12 @@ const statusOf = (c) => (c.expiredQty > 0 ? ["err", "Ada yang kedaluwarsa"] : c.
 export default function StokJadiModule({ stokJadi, products, sales, waste, onSale, onDiscard, canFinance, roleId }) {
   const isKasir = roleId === "kasir";
   const [f, setF] = useState({ productId: products[0] ? products[0].id : "", qty: "" });
+  const [openSale, setOpenSale] = useState(false);
+  const [saleProductId, setSaleProductId] = useState("");
   const list = products.map((p) => stokJadi[p.id]);
   const expiredTotal = list.reduce((s, c) => s + c.expiredQty, 0);
   const all = list.flatMap((c) => c.items.map((i) => ({ ...i, product: c.product })));
-  const submit = (e) => { e.preventDefault(); if (onSale({ productId: f.productId, qty: f.qty })) setF({ ...f, qty: "" }); };
+  const submitSale = (e) => { e.preventDefault(); if (onSale({ productId: f.productId, qty: f.qty })) { setF({ ...f, qty: "" }); setOpenSale(false); } };
   const wasteMonth = waste.filter((w) => w.date.slice(0, 7) === new Date().toISOString().slice(0, 7));
   const todaySales = sales.filter((s) => s.date === new Date().toISOString().slice(0, 10));
   const todaySold = todaySales.reduce((s, x) => s + x.qty, 0);
@@ -37,16 +40,24 @@ export default function StokJadiModule({ stokJadi, products, sales, waste, onSal
               <div className="card pcard" key={c.product.id}>
                 <div className="pcard-top"><b>{c.product.name}</b><span className={"chip-status " + cls}><span className="dot"></span>{text}</span></div>
                 <div className="pcard-num">{c.fresh}<small> pcs siap jual</small></div>
-                <div className="pcard-meta">Tahan {c.shelf} hari{c.soon > 0 ? ` • ${c.soon} pcs segera jual` : ""}{c.expiredQty > 0 ? ` • ${c.expiredQty} pcs kedaluwarsa` : ""}</div>
+                <div className="pcard-meta">Tahan {c.shelf} hari{c.soon > 0 ? ` • ${c.soon} pcs segera dijual` : ""}{c.expiredQty > 0 ? ` • ${c.expiredQty} pcs kedaluwarsa` : ""}</div>
                 <div className="pcard-meta">Rata-rata laku: <b>{c.avg.value != null ? Math.round(c.avg.value) : "-"} pcs/hari</b></div>
-                <form className="gudang-form" onSubmit={(e) => { e.preventDefault(); if (onSale({ productId: c.product.id, qty: f.qty })) setF({ ...f, qty: "" }); }}>
-                  <div><label>Jumlah terjual (pcs)</label><input type="number" min="1" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} required placeholder="isi jumlah" /></div>
-                  <button className="primary-btn" style={{ justifyContent: "center", width: "100%", marginTop: 6 }}><Icon name="check" size={14} /> Catat penjualan {c.product.name}</button>
-                </form>
+                <button className="primary-btn" style={{ width: "100%", justifyContent: "center", marginTop: 10 }} onClick={() => { setSaleProductId(c.product.id); setF({ productId: c.product.id, qty: "" }); setOpenSale(true); }}><Icon name="check" size={14} /> Catat penjualan {c.product.name}</button>
               </div>
             );
           })}
         </div>
+
+        {/* Modal catat penjualan */}
+        {openSale && (
+          <ModalForm title="Catat Penjualan" desc={`Isi jumlah ${products.find((p) => p.id === saleProductId)?.name} yang terjual.`} onClose={() => setOpenSale(false)} icon="bread">
+            <form className="gudang-form" onSubmit={submitSale}>
+              <div><label>Produk</label><select value={f.productId} onChange={(e) => setF({ ...f, productId: e.target.value })} disabled>{products.map((p) => <option key={p.id} value={p.id}>{p.name}, siap jual {stokJadi[p.id]?.fresh || 0} pcs</option>)}</select></div>
+              <div><label>Jumlah terjual (pcs)</label><input type="number" min="1" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} required placeholder="isi jumlah" /></div>
+              <button className="primary-btn" style={{ width: "100%", justifyContent: "center" }}><Icon name="check" size={14} /> Simpan Penjualan</button>
+            </form>
+          </ModalForm>
+        )}
 
         {/* Roti kedaluwarsa */}
         <div className="card" style={{ marginTop: 16 }}>
@@ -88,25 +99,27 @@ export default function StokJadiModule({ stokJadi, products, sales, waste, onSal
               <div className="pcard-num">{c.fresh}<small> pcs siap jual</small></div>
               <div className="pcard-meta">Tahan {c.shelf} hari{c.soon > 0 ? ` • ${c.soon} pcs harus segera dijual` : ""}{c.expiredQty > 0 ? ` • ${c.expiredQty} pcs kedaluwarsa` : ""}</div>
               <div className="pcard-meta">Rata-rata terjual: <b>{c.avg.value != null ? Math.round(c.avg.value) : "-"} pcs/hari</b>{c.avg.value != null && !c.avg.real ? " (perkiraan awal dari rencana)" : ""}</div>
-              <div className="pcard-rec">
-                {rec ? (<>Produksi {c.cycle.isToday ? "hari ini" : c.cycle.nextDay}: <b>{rec.rekom} pcs</b>
-                  <small>{rec.rekom === 0 ? "Stok masih cukup, tidak perlu produksi." : `Kebutuhan ${rec.target} pcs untuk ${rec.sellDays} hari, stok yang masih layak ${c.stockAt} pcs.`}{c.planQty != null ? ` Rencana sistem: ${c.planQty} pcs.` : ""}</small></>)
-                  : <small>Isi penjualan beberapa hari agar saran produksi muncul.</small>}
-              </div>
+              <button className="primary-btn" style={{ width: "100%", justifyContent: "center", marginTop: 10 }} onClick={() => { setSaleProductId(c.product.id); setF({ productId: c.product.id, qty: "" }); setOpenSale(true); }}><Icon name="check" size={14} /> Catat Penjualan</button>
+              {rec ? (<div className="pcard-rec">Produksi {c.cycle.isToday ? "hari ini" : c.cycle.nextDay}: <b>{rec.rekom} pcs</b>
+                <small>{rec.rekom === 0 ? "Stok masih cukup, tidak perlu produksi." : `Kebutuhan ${rec.target} pcs untuk ${rec.sellDays} hari, stok yang masih layak ${c.stockAt} pcs.`}{c.planQty != null ? ` Rencana sistem: ${c.planQty} pcs.` : ""}</small></div>)
+                : <small>Isi penjualan beberapa hari agar saran produksi muncul.</small>}
             </div>
           );
         })}
       </div>
 
-      <div className="module-grid two">
-        <div className="card">
-          <div className="module-card-title"><div><h3>Catat penjualan</h3><p>Isi jumlah roti yang laku. Roti paling lama dijual lebih dulu.</p></div></div>
-          <form className="gudang-form" onSubmit={submit}>
-            <div><label>Produk</label><select value={f.productId} onChange={(e) => setF({ ...f, productId: e.target.value })}>{products.map((p) => <option key={p.id} value={p.id}>{p.name}, siap jual {stokJadi[p.id].fresh} pcs</option>)}</select></div>
+      {/* Modal catat penjualan */}
+      {openSale && (
+        <ModalForm title="Catat Penjualan" desc="Isi jumlah roti yang laku. Roti paling lama dijual lebih dulu." onClose={() => setOpenSale(false)} icon="bread">
+          <form className="gudang-form" onSubmit={submitSale}>
+            <div><label>Produk</label><select value={f.productId} onChange={(e) => setF({ ...f, productId: e.target.value })}>{products.map((p) => <option key={p.id} value={p.id}>{p.name}, siap jual {stokJadi[p.id]?.fresh || 0} pcs</option>)}</select></div>
             <div><label>Jumlah terjual (pcs)</label><input type="number" min="1" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} required /></div>
-            <button className="primary-btn" style={{ justifyContent: "center" }}><Icon name="check" size={14} /> Simpan penjualan</button>
+            <button className="primary-btn" style={{ width: "100%", justifyContent: "center" }}><Icon name="check" size={14} /> Simpan Penjualan</button>
           </form>
-        </div>
+        </ModalForm>
+      )}
+
+      <div className="module-grid two">
         <div className="card">
           <div className="module-card-title"><div><h3>Roti kedaluwarsa</h3><p>Yang sudah lewat masa simpan tidak boleh dijual.</p></div></div>
           <div className="pcard-num" style={{ color: expiredTotal ? "var(--red)" : "var(--green-text)" }}>{expiredTotal}<small> pcs</small></div>

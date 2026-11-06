@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import Icon from "../components/Icon.jsx";
+import ModalForm from "../components/ModalForm.jsx";
 import { fmtQty } from "../lib/format.js";
 import { dayNameID } from "../lib/planner.js";
 
 export default function RencanaProduksiModule({ stokJadi, approved, products, materials, realisasi, onReport, go, canFinance }) {
   const snap = approved && approved.status === "approved" ? approved.snapshot : null;
   const today = dayNameID();
+  const [openReport, setOpenReport] = useState(false);
   const [form, setForm] = useState({ x1: "", x2: "", x3: "", reject: "", note: "", deduct: true });
   const upd = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
 
@@ -28,10 +30,10 @@ export default function RencanaProduksiModule({ stokJadi, approved, products, ma
   const since = new Date(approved.approvedAt).toISOString().slice(0, 10);
   realisasi.filter((r) => r.date >= since).forEach((r) => { done.PRD01 += r.x1; done.PRD02 += r.x2; done.PRD03 += r.x3; });
 
-  const submit = (e) => {
+  const submitReport = (e) => {
     e.preventDefault();
     const ok = onReport({ x1: Number(form.x1) || 0, x2: Number(form.x2) || 0, x3: Number(form.x3) || 0, reject: Number(form.reject) || 0, note: form.note, deduct: form.deduct });
-    if (ok) setForm({ x1: "", x2: "", x3: "", reject: "", note: "", deduct: true });
+    if (ok) { setForm({ x1: "", x2: "", x3: "", reject: "", note: "", deduct: true }); setOpenReport(false); }
   };
 
   return (
@@ -62,15 +64,20 @@ export default function RencanaProduksiModule({ stokJadi, approved, products, ma
 
         <div className="card">
           <div className="module-card-title"><div><h3>Input realisasi produksi</h3><p>Isi jumlah jadi yang benar-benar diproduksi.</p></div></div>
-          <form className="gudang-form" onSubmit={submit}>
-            {products.map((p, i) => (
-              <div key={p.id}><label>{p.name} (target {target[p.id]})</label><input type="number" min="0" value={form["x" + (i + 1)]} onChange={upd("x" + (i + 1))} placeholder="0" /></div>
-            ))}
-            <div><label>Produk reject / gagal (unit, info saja)</label><input type="number" min="0" value={form.reject} onChange={upd("reject")} placeholder="0" /></div>
-            <div><label>Catatan</label><input value={form.note} onChange={upd("note")} placeholder="Contoh oven bermasalah 30 menit" /></div>
-            <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12 }}><input type="checkbox" checked={form.deduct} onChange={upd("deduct")} style={{ width: "auto" }} /> Kurangi stok bahan otomatis sesuai resep</label>
-            <button className="primary-btn" style={{ justifyContent: "center" }}><Icon name="check" size={14} /> Simpan realisasi</button>
-          </form>
+          <button className="primary-btn" style={{ width: "100%", justifyContent: "center", marginTop: 10 }} onClick={() => { setForm({ x1: "", x2: "", x3: "", reject: "", note: "", deduct: true }); setOpenReport(true); }}><Icon name="check" size={14} /> Simpan Realisasi Produksi</button>
+          {openReport && (
+            <ModalForm title="Input Realisasi Produksi" desc="Masukkan jumlah roti yang diproduksi hari ini sesuai rencana." onClose={() => { setOpenReport(false); setForm({ x1: "", x2: "", x3: "", reject: "", note: "", deduct: true }); }} icon="layers">
+              <form className="gudang-form" onSubmit={submitReport}>
+                {products.map((p, i) => (
+                  <div key={p.id}><label>{p.name} (target {target[p.id]})</label><input type="number" min="0" value={form["x" + (i + 1)]} onChange={upd("x" + (i + 1))} placeholder="0" /></div>
+                ))}
+                <div><label>Produk reject / gagal (unit, info saja)</label><input type="number" min="0" value={form.reject} onChange={upd("reject")} placeholder="0" /></div>
+                <div><label>Catatan</label><input value={form.note} onChange={upd("note")} placeholder="Contoh oven bermasalah 30 menit" /></div>
+                <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12 }}><input type="checkbox" checked={form.deduct} onChange={upd("deduct")} style={{ width: "auto" }} /> Kurangi stok bahan otomatis sesuai resep</label>
+                <button className="primary-btn" style={{ width: "100%", justifyContent: "center" }}><Icon name="check" size={14} /> Simpan Realisasi</button>
+              </form>
+            </ModalForm>
+          )}
         </div>
       </div>
 
@@ -83,7 +90,8 @@ export default function RencanaProduksiModule({ stokJadi, approved, products, ma
         <div className="data-table-wrap" style={{ marginTop: 14 }}><table className="data-table" style={{ minWidth: 0 }}>
           <thead><tr><th>Tanggal</th><th>Oleh</th><th>Manis</th><th>Tawar</th><th>Kering</th><th>Reject</th><th>Catatan</th></tr></thead>
           <tbody>{realisasi.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", color: "var(--faint)" }}>Belum ada realisasi.</td></tr>}
-            {realisasi.slice(0, 15).map((r) => (<tr key={r.id}><td>{r.date} <small>{r.day}</small></td><td>{r.by}</td><td>{r.x1}</td><td>{r.x2}</td><td>{r.x3}</td><td>{r.reject}</td><td>{r.note}</td></tr>))}</tbody>
+            {realisasi.slice(0, 15).map((r) => (<tr key={r.id}><td>{r.date} <small>{r.day}</small></td><td>{r.by}</td><td>{r.x1}</td><td>{r.x2}</td><td>{r.x3}</td><td>{r.reject}</td><td>{r.note}</td></tr>))}
+          </tbody>
         </table></div>
         <button className="pill" style={{ marginTop: 12 }} onClick={() => go("Pengajuan Bahan")}>Bahan kurang? Ajukan pembelian</button>
       </div>
